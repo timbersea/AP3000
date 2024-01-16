@@ -99,7 +99,17 @@ public class YouDianPackage {
         return DatatypeConverter.printHexBinary(bytes);
     }
 
+
     public YouDianPackage() {
+    }
+
+    public YouDianPackage getReply(YouDianPackage req){
+        YouDianPackage youDianPackage = new YouDianPackage();
+        youDianPackage.dny=req.dny;
+        youDianPackage.physicalId=req.physicalId;
+        youDianPackage.setMessageId(req.getMessageId());
+        youDianPackage.setCommand(req.command);
+        return youDianPackage;
     }
 
     public static YouDianPackage buildFromHexString(String hexString) {
