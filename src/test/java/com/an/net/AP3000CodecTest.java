@@ -17,10 +17,10 @@ public class AP3000CodecTest extends TestCase {
         String hexString = "444E591D003B37AB04B900017E008C080200030000E40000003B0229070220006D05";
         EmbeddedChannel channel = new EmbeddedChannel(new AP3000Codec(), new LoggingHandler(LogLevel.DEBUG));
 
-        YouDianPackage youDianPackage = YouDianPackage.buildFromHexString(hexString);
+        UDianPackage uDianPackage = UDianPackage.buildFromHexString(hexString);
 
         //模拟写出数据
-        Assert.assertTrue(channel.writeOutbound(youDianPackage));
+        Assert.assertTrue(channel.writeOutbound(uDianPackage));
         channel.flush();
         Assert.assertTrue(channel.finish());
         ByteBuf o = channel.readOutbound();
@@ -33,7 +33,7 @@ public class AP3000CodecTest extends TestCase {
         String hexString = "444E591D003B37AB04B900017E008C080200030000E40000003B0229070220006D05";
         EmbeddedChannel channel = new EmbeddedChannel(new AP3000Codec());
 
-        YouDianPackage msg = YouDianPackage.buildFromHexString(hexString);
+        UDianPackage msg = UDianPackage.buildFromHexString(hexString);
         ByteBuf out = Unpooled.buffer();
 
         out.writeBytes(msg.getDny().getBytes(StandardCharsets.UTF_8));
@@ -76,7 +76,7 @@ public class AP3000CodecTest extends TestCase {
         channel.read();
 
         Assert.assertTrue(channel.finish());
-        YouDianPackage o = channel.readInbound();
+        UDianPackage o = channel.readInbound();
     }
 
     public void testGetYouDianPackage() {

@@ -5,11 +5,11 @@ import com.an.entity.req.Register;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-public class MessageHandler extends SimpleChannelInboundHandler<YouDianPackage> {
+public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(MessageHandler.class);
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, YouDianPackage msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, UDianPackage msg) throws Exception {
         log.debug("channelRead0:ctx = [{}], msg = [{}]", ctx, msg);
         int command = msg.getCommand();
         byte[] data = msg.getData();
@@ -47,7 +47,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<YouDianPackage> 
                 log.info(" data = [{}]", register);
             }
             case 0x22:{
-                YouDianPackage youDianPackage = new YouDianPackage();
+                UDianPackage uDianPackage = new UDianPackage();
             }
         }
     }

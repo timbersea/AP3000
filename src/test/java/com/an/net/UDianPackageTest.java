@@ -10,18 +10,18 @@ import org.slf4j.LoggerFactory;
 import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.StandardCharsets;
 
-public class YouDianPackageTest extends TestCase {
-    private static final Logger log = LoggerFactory.getLogger(YouDianPackageTest.class);
+public class UDianPackageTest extends TestCase {
+    private static final Logger log = LoggerFactory.getLogger(UDianPackageTest.class);
 
     public void testBuildFromHexString() {
-        YouDianPackage youDianPackage = YouDianPackage.buildFromHexString("444E591D003B37AB04B900017E008C080200030000E40000003B0229070220006D05");
-        log.debug("testBuildFromHexString:{}",youDianPackage );
-        Assert.assertEquals("444E591D003B37AB04B900017E008C080200030000E40000003B0229070220006D05",youDianPackage.toHexString());
+        UDianPackage uDianPackage = UDianPackage.buildFromHexString("444E591D003B37AB04B900017E008C080200030000E40000003B0229070220006D05");
+        log.debug("testBuildFromHexString:{}", uDianPackage);
+        Assert.assertEquals("444E591D003B37AB04B900017E008C080200030000E40000003B0229070220006D05", uDianPackage.toHexString());
     }
 
     public void testEncode() {
         ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
-        YouDianPackage msg = new YouDianPackage();
+        UDianPackage msg = new UDianPackage();
         msg.setDny("DNY");
         msg.setLength((short) 29);
         msg.setPhysicalId(78329659);

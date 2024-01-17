@@ -9,9 +9,9 @@ import io.netty.util.ReferenceCountUtil;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-public class AP3000Codec extends ByteToMessageCodec<YouDianPackage> {
+public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
     @Override
-    protected void encode(ChannelHandlerContext channelHandlerContext, YouDianPackage msg, ByteBuf out) throws Exception {
+    protected void encode(ChannelHandlerContext channelHandlerContext, UDianPackage msg, ByteBuf out) throws Exception {
         out.writeBytes(msg.getDny().getBytes(StandardCharsets.UTF_8));
         out.writeShortLE(msg.getLength());
         out.writeIntLE(msg.getPhysicalId());
@@ -25,12 +25,12 @@ public class AP3000Codec extends ByteToMessageCodec<YouDianPackage> {
     protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf, List<Object> list) throws Exception {
         ByteBuf decoded = decode(byteBuf);
         if (decoded != null) {
-            YouDianPackage youDianPackage = getYouDianPackage(decoded);
-            list.add(youDianPackage);
+            UDianPackage uDianPackage = getYouDianPackage(decoded);
+            list.add(uDianPackage);
         }
     }
 
-    public static YouDianPackage getYouDianPackage(ByteBuf decoded) {
+    public static UDianPackage getYouDianPackage(ByteBuf decoded) {
         decoded.readBytes(3);
         int length = decoded.readUnsignedShortLE();
         int physicalId = decoded.readIntLE();
@@ -39,19 +39,19 @@ public class AP3000Codec extends ByteToMessageCodec<YouDianPackage> {
         ByteBuf data = decoded.readBytes(length - 4 - 2 - 1 - 2);
         int check = decoded.readUnsignedShortLE();
 
-        YouDianPackage youDianPackage = new YouDianPackage();
-        youDianPackage.setDny("DNY");
-        youDianPackage.setLength((short) length);
-        youDianPackage.setPhysicalId(physicalId);
-        youDianPackage.setMessageId((short) messageId);
-        youDianPackage.setCommand(command);
+        UDianPackage uDianPackage = new UDianPackage();
+        uDianPackage.setDny("DNY");
+        uDianPackage.setLength((short) length);
+        uDianPackage.setPhysicalId(physicalId);
+        uDianPackage.setMessageId((short) messageId);
+        uDianPackage.setCommand(command);
         byte[] bytes = new byte[length - 4 - 2 - 1 - 2];
         data.readBytes(bytes);
-        youDianPackage.setData(bytes);
-        youDianPackage.setCheck((short) check);
+        uDianPackage.setData(bytes);
+        uDianPackage.setCheck((short) check);
 
         ReferenceCountUtil.release(decoded);
-        return youDianPackage;
+        return uDianPackage;
     }
 
     private ByteBuf decode(ByteBuf in) throws Exception {

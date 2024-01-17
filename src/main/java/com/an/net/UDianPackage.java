@@ -6,7 +6,7 @@ import io.netty.buffer.ByteBufAllocator;
 import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.StandardCharsets;
 
-public class YouDianPackage {
+public class UDianPackage {
     private String dny = "DNY";
     private short length;
     private int physicalId;
@@ -100,19 +100,22 @@ public class YouDianPackage {
     }
 
 
-    public YouDianPackage() {
+    public UDianPackage() {
     }
 
-    public YouDianPackage getReply(YouDianPackage req){
-        YouDianPackage youDianPackage = new YouDianPackage();
-        youDianPackage.dny=req.dny;
-        youDianPackage.physicalId=req.physicalId;
-        youDianPackage.setMessageId(req.getMessageId());
-        youDianPackage.setCommand(req.command);
-        return youDianPackage;
+    public UDianPackage getReply(UDianPackage req, byte [] data){
+        UDianPackage uDianPackage = new UDianPackage();
+        uDianPackage.dny=req.dny;
+        uDianPackage.physicalId=req.physicalId;
+        uDianPackage.setMessageId(req.getMessageId());
+        uDianPackage.setCommand(req.command);
+        uDianPackage.setData(data);
+        uDianPackage.setLength((short) 1);
+        //youDianPackage.setCheck();
+        return uDianPackage;
     }
 
-    public static YouDianPackage buildFromHexString(String hexString) {
+    public static UDianPackage buildFromHexString(String hexString) {
         ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer(hexString.length()/2);
         buffer.writeBytes(DatatypeConverter.parseHexBinary(hexString));
         return AP3000Codec.getYouDianPackage(buffer);
