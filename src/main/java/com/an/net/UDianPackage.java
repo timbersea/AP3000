@@ -28,6 +28,15 @@ public class UDianPackage {
         return length;
     }
 
+
+    public short calLength() {
+        return (short) (4 + 2 + 1 + data.length + 2);
+    }
+
+    public short calCheck(){
+        return 1;
+    }
+
     public void setLength(short length) {
         this.length = length;
     }
@@ -48,7 +57,7 @@ public class UDianPackage {
         this.messageId = messageId;
     }
 
-    public int getCommand() {
+    public byte getCommand() {
         return command;
     }
 
@@ -70,6 +79,13 @@ public class UDianPackage {
 
     public void setCheck(short check) {
         this.check = check;
+    }
+
+    public byte getDeviceType(){
+        return (byte) (physicalId>>24);
+    }
+    public int getDeviceCode(){
+        return physicalId&0x00FFFFFF;
     }
 
     @Override
@@ -103,21 +119,23 @@ public class UDianPackage {
     public UDianPackage() {
     }
 
-    public UDianPackage getReply(UDianPackage req, byte [] data){
+    public UDianPackage getReply(byte[] data) {
         UDianPackage uDianPackage = new UDianPackage();
-        uDianPackage.dny=req.dny;
-        uDianPackage.physicalId=req.physicalId;
-        uDianPackage.setMessageId(req.getMessageId());
-        uDianPackage.setCommand(req.command);
+        uDianPackage.dny = this.dny;
+        uDianPackage.physicalId = this.physicalId;
+        uDianPackage.setMessageId(this.getMessageId());
+        uDianPackage.setCommand(this.command);
         uDianPackage.setData(data);
-        uDianPackage.setLength((short) 1);
-        //youDianPackage.setCheck();
+        uDianPackage.setLength((uDianPackage.calLength()));
+        uDianPackage.setCheck((short) 0x02);
         return uDianPackage;
     }
 
     public static UDianPackage buildFromHexString(String hexString) {
-        ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer(hexString.length()/2);
+        ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer(hexString.length() / 2);
         buffer.writeBytes(DatatypeConverter.parseHexBinary(hexString));
         return AP3000Codec.getYouDianPackage(buffer);
     }
+
+
 }

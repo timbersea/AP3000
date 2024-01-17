@@ -66,14 +66,14 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
 
     public static short calCheck(byte[] data) {
             // 将每两个字节转换为无符号16位整数并相加
-            short sum = 0;
-            for (int i = 0; i < data.length; i += 2) {
-                int value1 = data[i] & 0xFF; // 将字节转换为无符号整数
-                int value2 = data[i + 1] & 0xFF;
-                int result = (value1 << 8) | value2; // 将两个字节合并成一个16位整数
-                sum += result;
-            }
-            return sum;
+//            short sum = 0;
+//            for (int i = 0; i < data.length; i += 2) {
+//                int value1 = data[i] & 0xFF; // 将字节转换为无符号整数
+//                int value2 = data[i + 1] & 0xFF;
+//                int result = (value1 << 8) | value2; // 将两个字节合并成一个16位整数
+//                sum += result;
+//            }
+            return 0;
     }
 
     private ByteBuf decode(ByteBuf in) throws Exception {
