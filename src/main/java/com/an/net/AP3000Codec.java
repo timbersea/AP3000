@@ -5,11 +5,15 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
 import io.netty.handler.codec.TooLongFrameException;
 import io.netty.util.ReferenceCountUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
+    private static final Logger log = LoggerFactory.getLogger(AP3000Codec.class);
+
     @Override
     protected void encode(ChannelHandlerContext channelHandlerContext, UDianPackage msg, ByteBuf out) throws Exception {
         out.writeBytes(msg.getDny().getBytes(StandardCharsets.UTF_8));
@@ -31,6 +35,10 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
     }
 
     public static UDianPackage getYouDianPackage(ByteBuf decoded) {
+        byte[] toCalCheck = new byte[decoded.readableBytes()-2];
+        decoded.getBytes(0,toCalCheck,0,toCalCheck.length-2);
+        int i = calCheck(toCalCheck);
+
         decoded.readBytes(3);
         int length = decoded.readUnsignedShortLE();
         int physicalId = decoded.readIntLE();
@@ -50,8 +58,22 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
         uDianPackage.setData(bytes);
         uDianPackage.setCheck((short) check);
 
+        log.debug("cal check value :[{}],receive chekcValue[{}]",i,check);
+
         ReferenceCountUtil.release(decoded);
         return uDianPackage;
+    }
+
+    public static short calCheck(byte[] data) {
+            // 将每两个字节转换为无符号16位整数并相加
+            short sum = 0;
+            for (int i = 0; i < data.length; i += 2) {
+                int value1 = data[i] & 0xFF; // 将字节转换为无符号整数
+                int value2 = data[i + 1] & 0xFF;
+                int result = (value1 << 8) | value2; // 将两个字节合并成一个16位整数
+                sum += result;
+            }
+            return sum;
     }
 
     private ByteBuf decode(ByteBuf in) throws Exception {

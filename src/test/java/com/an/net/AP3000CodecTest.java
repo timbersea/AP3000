@@ -81,4 +81,27 @@ public class AP3000CodecTest extends TestCase {
 
     public void testGetYouDianPackage() {
     }
+
+    /**
+     * 设备心跳包
+     */
+    public void test1() {
+
+        String hexString = "444E591D003B37AB04B900017E008C080200030000E40000003B0229070220006D05";
+        EmbeddedChannel channel = new EmbeddedChannel(new AP3000Codec(), new MessageHandler());
+
+        UDianPackage msg = UDianPackage.buildFromHexString(hexString);
+        ByteBuf out = Unpooled.buffer();
+        out.writeBytes(msg.getDny().getBytes(StandardCharsets.UTF_8));
+        out.writeShortLE(msg.getLength());
+        out.writeIntLE(msg.getPhysicalId());
+        out.writeShortLE(msg.getMessageId());
+        out.writeByte(msg.getCommand());
+        out.writeBytes(msg.getData());
+        out.writeShortLE(msg.getCheck());
+        //验证写数据返回True
+        channel.writeInbound(out);
+        channel.flush();
+        channel.readInbound();
+    }
 }
