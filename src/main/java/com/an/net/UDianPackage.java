@@ -2,6 +2,7 @@ package com.an.net;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.util.ReferenceCountUtil;
 
 import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.StandardCharsets;
@@ -31,10 +32,6 @@ public class UDianPackage {
 
     public short calLength() {
         return (short) (4 + 2 + 1 + data.length + 2);
-    }
-
-    public short calCheck(){
-        return 1;
     }
 
     public void setLength(short length) {
@@ -112,6 +109,7 @@ public class UDianPackage {
         out.writeShortLE(this.getCheck());
         byte[] bytes = new byte[out.readableBytes()];
         out.readBytes(bytes);
+        ReferenceCountUtil.release(out);
         return DatatypeConverter.printHexBinary(bytes);
     }
 
@@ -136,6 +134,4 @@ public class UDianPackage {
         buffer.writeBytes(DatatypeConverter.parseHexBinary(hexString));
         return AP3000Codec.getYouDianPackage(buffer);
     }
-
-
 }

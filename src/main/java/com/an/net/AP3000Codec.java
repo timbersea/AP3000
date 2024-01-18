@@ -1,6 +1,7 @@
 package com.an.net;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
 import io.netty.handler.codec.TooLongFrameException;
@@ -22,7 +23,7 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
         out.writeShortLE(msg.getMessageId());
         out.writeByte(msg.getCommand());
         out.writeBytes(msg.getData());
-        out.writeShortLE(msg.getCheck());
+        out.writeShortLE(calCheck(msg));
     }
 
     @Override
@@ -35,10 +36,8 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
     }
 
     public static UDianPackage getYouDianPackage(ByteBuf decoded) {
-        byte[] toCalCheck = new byte[decoded.readableBytes()-2];
-        decoded.getBytes(0,toCalCheck,0,toCalCheck.length-2);
-        int i = calCheck(toCalCheck);
-
+        byte[] toCalCheck = new byte[decoded.readableBytes() - 2];//去掉最后两字节的检校值后的数据参与计算校验值
+        decoded.getBytes(0, toCalCheck, 0, toCalCheck.length);
         decoded.readBytes(3);
         int length = decoded.readUnsignedShortLE();
         int physicalId = decoded.readIntLE();
@@ -46,6 +45,8 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
         byte command = decoded.readByte();
         ByteBuf data = decoded.readBytes(length - 4 - 2 - 1 - 2);
         int check = decoded.readUnsignedShortLE();
+        ReferenceCountUtil.release(decoded);
+
 
         UDianPackage uDianPackage = new UDianPackage();
         uDianPackage.setDny("DNY");
@@ -58,22 +59,34 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
         uDianPackage.setData(bytes);
         uDianPackage.setCheck((short) check);
 
-        log.debug("cal check value :[{}],receive chekcValue[{}]",i,check);
-
-        ReferenceCountUtil.release(decoded);
+        int calCheckValue = calCheck(toCalCheck);
+        if (calCheckValue != check) {
+            log.debug("cal check value :[{}],receive chekcValue[{}]", calCheckValue, check);
+            throw new IllegalArgumentException("calCheckValue: " + calCheckValue + " not equals to check: " + check);
+        }
         return uDianPackage;
     }
 
-    public static short calCheck(byte[] data) {
-            // 将每两个字节转换为无符号16位整数并相加
-//            short sum = 0;
-//            for (int i = 0; i < data.length; i += 2) {
-//                int value1 = data[i] & 0xFF; // 将字节转换为无符号整数
-//                int value2 = data[i + 1] & 0xFF;
-//                int result = (value1 << 8) | value2; // 将两个字节合并成一个16位整数
-//                sum += result;
-//            }
-            return 0;
+    private static int calCheck(byte[] data) {
+        int sum = 0;
+        for (byte b : data) {
+            sum += (b & 0x000000FF);
+        }
+        return sum;
+    }
+
+    private static int calCheck(UDianPackage uDianPackage) {
+        ByteBuf out = Unpooled.buffer();
+        out.writeBytes(uDianPackage.getDny().getBytes(StandardCharsets.UTF_8));
+        out.writeShortLE(uDianPackage.getLength());
+        out.writeIntLE(uDianPackage.getPhysicalId());
+        out.writeShortLE(uDianPackage.getMessageId());
+        out.writeByte(uDianPackage.getCommand());
+        out.writeBytes(uDianPackage.getData());
+        byte[] toCalCheck = new byte[out.readableBytes()];
+        out.readBytes(toCalCheck);
+        ReferenceCountUtil.release(out);
+        return calCheck(toCalCheck);
     }
 
     private ByteBuf decode(ByteBuf in) throws Exception {
