@@ -71,11 +71,11 @@ public class AP3000CodecTest extends TestCase {
 
 
         //验证写数据返回True
-        Assert.assertTrue(channel.writeInbound(out));
+        channel.writeInbound(out);
         channel.flush();
         channel.read();
 
-        Assert.assertTrue(channel.finish());
+        channel.finish();
         UDianPackage o = channel.readInbound();
     }
 

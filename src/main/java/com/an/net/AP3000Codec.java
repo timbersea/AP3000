@@ -17,7 +17,7 @@ import java.util.List;
 public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
     private static final Logger log = LoggerFactory.getLogger(AP3000Codec.class);
 
-    AttributeKey<String> simAttr = AttributeKey.newInstance("simNo");
+   private static final AttributeKey<String> simAttr = AttributeKey.newInstance("simNo");
 
 
     @Override
