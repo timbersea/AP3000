@@ -269,4 +269,79 @@ public class AP3000CodecTest extends TestCase {
         channel.flush();
         channel.readInbound();
     }
+
+    public void test7(){
+        //建立连接后发送simCardNo
+        String hexString = "3839383630343438313631383730303634383135";
+        EmbeddedChannel channel = new EmbeddedChannel(new LoggingHandler(LogLevel.DEBUG),new AP3000Codec(),
+                new MessageHandler());
+        ByteBuf out = Unpooled.buffer();
+        out.writeBytes(DatatypeConverter.parseHexBinary(hexString));
+        //验证写数据返回True
+        channel.writeInbound(out);
+        channel.flush();
+        channel.readInbound();
+
+
+        //设备心跳包
+        String heartBeatHexString = "444E591D003B37AB04B900017E008C080200030000E40000003B0229070220006D05";
+
+        UDianPackage msg = UDianPackage.buildFromHexString(heartBeatHexString);
+        ByteBuf out1 = Unpooled.buffer();
+        out1.writeBytes(msg.getDny().getBytes(StandardCharsets.UTF_8));
+        out1.writeShortLE(msg.getLength());
+        out1.writeIntLE(msg.getPhysicalId());
+        out1.writeShortLE(msg.getMessageId());
+        out1.writeByte(msg.getCommand());
+        out1.writeBytes(msg.getData());
+        out1.writeShortLE(msg.getCheck());
+        //验证写数据返回True
+        channel.writeInbound(out1);
+        channel.flush();
+        channel.readInbound();
+
+        //发送一个链路保活的link数据
+        ByteBuf link = Unpooled.buffer();
+        link.writeBytes("link".getBytes(StandardCharsets.UTF_8));
+        channel.writeInbound(link);
+        channel.flush();
+        channel.readInbound();
+
+
+        //获取服务器时间
+        String swipingCard = "444E590D003B37AB04B90022090EA95F1304";
+
+        UDianPackage uDianSwipingCard = UDianPackage.buildFromHexString(swipingCard);
+        ByteBuf swipingCardBuf = Unpooled.buffer();
+        swipingCardBuf.writeBytes(uDianSwipingCard.getDny().getBytes(StandardCharsets.UTF_8));
+        swipingCardBuf.writeShortLE(uDianSwipingCard.getLength());
+        swipingCardBuf.writeIntLE(uDianSwipingCard.getPhysicalId());
+        swipingCardBuf.writeShortLE(uDianSwipingCard.getMessageId());
+        swipingCardBuf.writeByte(uDianSwipingCard.getCommand());
+        swipingCardBuf.writeBytes(uDianSwipingCard.getData());
+        swipingCardBuf.writeShortLE(uDianSwipingCard.getCheck());
+        //验证写数据返回True
+        channel.writeInbound(swipingCardBuf);
+        channel.flush();
+        channel.readInbound();
+    }
+
+    public void test8(){
+        String hexString = "444E5932003B37AB040A00060101100E300001E803B0042003E803201909011800001300303801020304050100E8039808C7015500DA08";
+        EmbeddedChannel channel = new EmbeddedChannel(new LoggingHandler(LogLevel.DEBUG),new AP3000Codec(),
+                new MessageHandler());
+        UDianPackage msg = UDianPackage.buildFromHexString(hexString);
+        ByteBuf out = Unpooled.buffer();
+        out.writeBytes(msg.getDny().getBytes(StandardCharsets.UTF_8));
+        out.writeShortLE(msg.getLength());
+        out.writeIntLE(msg.getPhysicalId());
+        out.writeShortLE(msg.getMessageId());
+        out.writeByte(msg.getCommand());
+        out.writeBytes(msg.getData());
+        out.writeShortLE(msg.getCheck());
+        //验证写数据返回True
+        channel.writeInbound(out);
+        channel.flush();
+        channel.readInbound();
+    }
 }

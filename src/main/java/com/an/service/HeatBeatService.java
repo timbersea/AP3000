@@ -1,22 +1,17 @@
 package com.an.service;
 
 import com.an.entity.req.HeatBeat;
+import com.an.entity.resp.BaseResp;
 
-public class HeatBeatService extends AbstractService<HeatBeat> {
+public class HeatBeatService extends AbstractService<HeatBeat, BaseResp> {
+
     @Override
-    public byte[] onReceive(byte [] data) {
-        HeatBeat heatBeat = parseData(data);
-        return new byte[0];
+    protected BaseResp doService(HeatBeat heatBeat) {
+        return new BaseResp();
     }
 
     @Override
-    protected byte[] doService(HeatBeat heatBeat) {
-        return new byte[]{0};
-    }
-
-
-    @Override
-    public HeatBeat parseData(byte [] data){
+    public HeatBeat parseData(byte[] data) {
         HeatBeat heatBeat = new HeatBeat();
         //小端转大端
         heatBeat.setFirmwareVersion((short) ((data[1] << 8) | (data[0] & 0xff)));
@@ -29,7 +24,7 @@ public class HeatBeatService extends AbstractService<HeatBeat> {
         if (portNum > 0) {
             System.arraycopy(data, 5, portStatus, 0, portNum);
             System.arraycopy(data, 5 + portNum, currentPower, 0, portNum * 2);
-            System.arraycopy(data, 5 + portNum+portNum*2, peakPower, 0, portNum * 2);
+            System.arraycopy(data, 5 + portNum + portNum * 2, peakPower, 0, portNum * 2);
         }
         heatBeat.setPortStatus(portStatus);
         heatBeat.setCurrentPower(byte2short(currentPower));
@@ -44,6 +39,7 @@ public class HeatBeatService extends AbstractService<HeatBeat> {
 
     /**
      * 将字节数组按小端序每两个字节解析成一个short类型的值
+     *
      * @param data
      * @return
      */
@@ -53,7 +49,7 @@ public class HeatBeatService extends AbstractService<HeatBeat> {
         }
         short[] shorts = new short[data.length / 2];
         for (int i = 0; i < shorts.length; i++) {
-            shorts[i] = ((short) ((data[i*2 + 1] << 8) | (data[i*2] & 0xff)));
+            shorts[i] = ((short) ((data[i * 2 + 1] << 8) | (data[i * 2] & 0xff)));
         }
         return shorts;
     }

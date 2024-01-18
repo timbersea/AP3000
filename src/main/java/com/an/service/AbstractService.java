@@ -8,7 +8,7 @@ import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class AbstractService<T> {
+public abstract class AbstractService<Req,Resp> {
     private static final Logger log = LoggerFactory.getLogger(AbstractService.class);
 
     private static Map<Byte, AbstractService> r = new ConcurrentHashMap();
@@ -17,13 +17,13 @@ public abstract class AbstractService<T> {
         r.put((byte) 0x01, new HeatBeatService());
     }
 
-    Class<T> clazz;
+    Class<Req> clazz;
 
     {
         try {
             ParameterizedType pt = (ParameterizedType) this.getClass().getGenericSuperclass();
             Type actualTypeArgument = pt.getActualTypeArguments()[0];
-            clazz = (Class<T>) actualTypeArgument;
+            clazz = (Class<Req>) actualTypeArgument;
             log.info("[{}] receive msg type is [{}]", this.getClass().getSimpleName(), clazz.getSimpleName());
         } catch (Exception e) {
             log.warn("parse generic params error at {}", this);
@@ -34,14 +34,14 @@ public abstract class AbstractService<T> {
      * @param data 收到的消息
      * @return 回复的消息
      */
-    public byte[] onReceive(byte[] data) {
-        T t = parseData(data);
+    public final Resp onReceive(byte[] data) {
+        Req t = parseData(data);
         return doService(t);
     }
 
-    protected abstract byte[] doService(T t);
+    protected abstract Resp doService(Req req);
 
-    protected abstract T parseData(byte[] data);
+    protected abstract Req parseData(byte[] data);
 
 
 }

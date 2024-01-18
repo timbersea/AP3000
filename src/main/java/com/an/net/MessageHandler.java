@@ -1,11 +1,15 @@
 package com.an.net;
 
 import com.an.entity.req.*;
+import com.an.entity.resp.ChargePortOrderConfirmResp;
 import com.an.service.MessageDispatcher;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
 import javax.xml.bind.DatatypeConverter;
+import java.util.Arrays;
 
 public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(MessageHandler.class);
@@ -33,8 +37,8 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     System.arraycopy(data, 5 + portNum + portNum * 2, peakPower, 0, portNum * 2);
                 }
                 heatBeat.setPortStatus(portStatus);
-                heatBeat.setCurrentPower(byte2short(currentPower));
-                heatBeat.setPeakPower(byte2short(peakPower));
+                heatBeat.setCurrentPower(byte2shortLE(currentPower));
+                heatBeat.setPeakPower(byte2shortLE(peakPower));
                 heatBeat.setVirtualId(data[data.length - 5]);
                 heatBeat.setSignalStrength(data[data.length - 4]);
                 heatBeat.setDeviceType(data[data.length - 3]);
@@ -130,6 +134,70 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                 log.info("data = [{}]", settleConsume);
                 break;
             }
+            case 0x04: {
+                ChargePortOrderConfirm chargePortOrderConfirm = new ChargePortOrderConfirm();
+                chargePortOrderConfirm.setPort(data[0]);
+                chargePortOrderConfirm.setStatus(data[1]);
+                chargePortOrderConfirm.setCardId(bytes2Int(Arrays.copyOfRange(data, 2, 6)));
+                chargePortOrderConfirm.setChargeTime(byte2ShortValue(Arrays.copyOfRange(data, 7, 7 + 2)));
+                chargePortOrderConfirm.setOrderId(DatatypeConverter.printHexBinary(Arrays.copyOfRange(data, 7, 7 + 16)));
+                ChargePortOrderConfirmResp chargePortOrderConfirmResp = new ChargePortOrderConfirmResp();
+                chargePortOrderConfirmResp.setReplay((byte) 0);
+                chargePortOrderConfirmResp.setPort(chargePortOrderConfirm.getPort());
+                ctx.writeAndFlush(msg.getReply(chargePortOrderConfirmResp.data()));
+                log.info("data = [{}]", chargePortOrderConfirm);
+                break;
+            }
+            case 0x06: {
+                PortChargePowerHeatBeat portChargePowerHeatBeat = new PortChargePowerHeatBeat();
+                ByteBuf byteBuf = Unpooled.buffer(data.length).writeBytes(data);
+                portChargePowerHeatBeat.setPort(byteBuf.readByte());
+                portChargePowerHeatBeat.setPortStatus(byteBuf.readByte());
+                portChargePowerHeatBeat.setChargeTime(byteBuf.readShortLE());
+                portChargePowerHeatBeat.setElectric(byteBuf.readShortLE());
+                portChargePowerHeatBeat.setLunchMode(byteBuf.readByte());
+                portChargePowerHeatBeat.setPower(byteBuf.readShortLE());
+                portChargePowerHeatBeat.setMaxPower(byteBuf.readShortLE());
+                portChargePowerHeatBeat.setMinPower(byteBuf.readShortLE());
+                portChargePowerHeatBeat.setAvgPower(byteBuf.readShortLE());
+                portChargePowerHeatBeat.setOrderId(DatatypeConverter.printHexBinary(byteBuf.readBytes(16).array()));
+                portChargePowerHeatBeat.setTimeElectric(byteBuf.readShortLE());
+                portChargePowerHeatBeat.setPeakPower(byteBuf.readShortLE());
+                portChargePowerHeatBeat.setVoltage(byteBuf.readShortLE());
+                portChargePowerHeatBeat.setElectricity(byteBuf.readShortLE());
+                portChargePowerHeatBeat.setEnvironmentTemperature(byteBuf.readByte());
+                portChargePowerHeatBeat.setPortTemperature(byteBuf.readByte());
+                portChargePowerHeatBeat.setTimestamp(byteBuf.readIntLE());
+                portChargePowerHeatBeat.setTakeTime(byteBuf.readShortLE());
+                log.info("data = [{}]", portChargePowerHeatBeat);
+                break;
+            }
+            case 0x42: {
+                log.info("data = [{}]", data[0]);
+
+            }
+            case 0x43: {
+                ChargeFinish chargeFinish = new ChargeFinish();
+                ByteBuf byteBuf = Unpooled.buffer(data.length).writeBytes(data);
+                chargeFinish.setChargeTime(byteBuf.readShortLE());
+                chargeFinish.setMaxPower(byteBuf.readShortLE());
+                chargeFinish.setElectric(byteBuf.readShortLE());
+                chargeFinish.setPort(byteBuf.readByte());
+                chargeFinish.setLunchMode(byteBuf.readByte());
+                chargeFinish.setCardId(byteBuf.readIntLE());
+                chargeFinish.setStopReason(byteBuf.readByte());
+                chargeFinish.setOrderId(DatatypeConverter.printHexBinary(byteBuf.readBytes(16).array()));
+                log.info("data = [{}]", chargeFinish);
+                break;
+            }
+            case 0x44: {
+                PortStatus portStatus = new PortStatus();
+                ByteBuf byteBuf = Unpooled.buffer(data.length).writeBytes(data);
+                portStatus.setPushType(byteBuf.readByte());
+                portStatus.setPort(byteBuf.readByte());
+                portStatus.setOrderId(DatatypeConverter.printHexBinary(byteBuf.readBytes(16).array()));
+            }
+
         }
 
 //            AbstractService service = MessageDispatcher.getService(command);
@@ -165,7 +233,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
      * @param data
      * @return
      */
-    private short[] byte2short(byte[] data) {
+    private short[] byte2shortLE(byte[] data) {
         if (data.length % 2 != 0) {
             throw new IllegalArgumentException("array length must be even number!");
         }
@@ -174,5 +242,32 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
             shorts[i] = ((short) ((data[i * 2 + 1] << 8) | (data[i * 2] & 0xff)));
         }
         return shorts;
+    }
+
+    private short byte2ShortValue(byte[] data) {
+        if (data == null || data.length != 2) {
+            throw new IllegalArgumentException("array length must be 2");
+        }
+        return (short) ((data[1] << 8) | (data[0] & 0xff));
+    }
+
+    /**
+     * 4字节大端序转int
+     *
+     * @param data
+     * @return
+     */
+    private int bytes2Int(byte[] data) {
+        if (data == null || data.length != 4) {
+            throw new IllegalArgumentException("byte array length must be 4");
+        }
+        return ((data[0] & 0xFF) << 24) | ((data[1] & 0xFF) << 16) | ((data[2] & 0xFF) << 8) | (data[3] & 0xFF);//4字节大端序
+    }
+
+    private int bytes2IntLE(byte[] data) {
+        if (data == null || data.length != 4) {
+            throw new IllegalArgumentException("byte array length must be 4");
+        }
+        return (data[0] & 0xFF) | ((data[1] & 0xFF) << 8) | ((data[2] & 0xFF) << 16) | ((data[3] & 0xFF) << 24);//4字节小端序
     }
 }

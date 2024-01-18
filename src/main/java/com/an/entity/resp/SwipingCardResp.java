@@ -1,6 +1,9 @@
 package com.an.entity.resp;
 
-public class SwipingCardResp {
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
+public class SwipingCardResp extends BaseResp {
     private int cardId;
     private byte status;
     private byte feeType;
@@ -45,5 +48,16 @@ public class SwipingCardResp {
 
     public void setPort(byte port) {
         this.port = port;
+    }
+
+    @Override
+    public byte[] data() {
+        ByteBuf buffer = Unpooled.buffer(11);
+        buffer.writeIntLE(cardId);
+        buffer.writeByte(status);
+        buffer.writeByte(feeType);
+        buffer.writeIntLE(balanceValidateDate);
+        buffer.writeByte(port);
+        return buffer.array();
     }
 }
