@@ -5,15 +5,20 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
 import io.netty.handler.codec.TooLongFrameException;
+import io.netty.util.AttributeKey;
 import io.netty.util.ReferenceCountUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
     private static final Logger log = LoggerFactory.getLogger(AP3000Codec.class);
+
+    AttributeKey<String> simAttr = AttributeKey.newInstance("simNo");
+
 
     @Override
     protected void encode(ChannelHandlerContext channelHandlerContext, UDianPackage msg, ByteBuf out) throws Exception {
@@ -28,10 +33,36 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
 
     @Override
     protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf, List<Object> list) throws Exception {
-        ByteBuf decoded = decode(byteBuf);
-        if (decoded != null) {
-            UDianPackage uDianPackage = getYouDianPackage(decoded);
-            list.add(uDianPackage);
+        //这是通信模块每次连上socket时，都会（第一时间）发送一次sim卡号给socket
+        if (channelHandlerContext.channel().attr(simAttr).get() == null) {
+            if (byteBuf.readableBytes() >= 20) {
+                ByteBuf simNoBuf = byteBuf.slice(0, 20);
+                byte[] simNoBytes = new byte[20];
+                simNoBuf.readBytes(simNoBytes, 0, 20);
+                String simNo = DatatypeConverter.printHexBinary(simNoBytes);
+                if ("38393836".equals(simNo.substring(0, 8))) {
+                    log.debug("decode:channel = [{}], simNo = [{}]", channelHandlerContext.channel(), simNo);
+                    channelHandlerContext.channel().attr(simAttr).setIfAbsent(simNo);
+                    byteBuf.skipBytes(20);
+                }
+            }
+        } else {
+            //{6C 69 6E 6B }link是模块心跳包，是防中国移动踢掉网的，长度固定为4字节，（服务器无需应答）。
+            if (byteBuf.readableBytes() >= 4) {
+                ByteBuf linkBuf = byteBuf.slice(0, 4);
+                byte[] linkByte = new byte[4];
+                linkBuf.readBytes(linkByte);
+                String link = DatatypeConverter.printHexBinary(linkByte);
+                if ("6C696E6B".equals(link)) {
+                    log.debug("decode:channel = [{}],read link [{}]", channelHandlerContext.channel(), link);
+                    byteBuf.skipBytes(4);
+                }
+            }
+            ByteBuf decoded = decode(byteBuf);
+            if (decoded != null) {
+                UDianPackage uDianPackage = getYouDianPackage(decoded);
+                list.add(uDianPackage);
+            }
         }
     }
 

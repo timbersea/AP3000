@@ -155,6 +155,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         super.exceptionCaught(ctx, cause);
+        log.error("exceptionCaught:ctx = [{}], cause = [{}]", ctx, cause);
         ctx.close();
     }
 
