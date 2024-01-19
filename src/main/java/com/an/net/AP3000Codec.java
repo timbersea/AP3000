@@ -41,7 +41,7 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
                 simNoBuf.readBytes(simNoBytes, 0, 20);
                 String simNo = DatatypeConverter.printHexBinary(simNoBytes);
                 if ("38393836".equals(simNo.substring(0, 8))) {
-                    log.debug("decode:channel = [{}], simNo = [{}]", channelHandlerContext.channel(), simNo);
+                    log.info("decode:channel = [{}], simNo = [{}]", channelHandlerContext.channel(), simNo);
                     channelHandlerContext.channel().attr(simAttr).setIfAbsent(simNo);
                     byteBuf.skipBytes(20);
                 }
@@ -106,7 +106,7 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
         return sum;
     }
 
-    private static int calCheck(UDianPackage uDianPackage) {
+    public static int calCheck(UDianPackage uDianPackage) {
         ByteBuf out = Unpooled.buffer();
         out.writeBytes(uDianPackage.getDny().getBytes(StandardCharsets.UTF_8));
         out.writeShortLE(uDianPackage.getLength());

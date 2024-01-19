@@ -9,10 +9,12 @@ import lombok.Setter;
 
 import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Setter
 @Getter
 public class UDianPackage {
+    private static final AtomicInteger seq=new  AtomicInteger();
 
     private String dny = "DNY";
     private short length;
@@ -71,6 +73,14 @@ public class UDianPackage {
 
     public UDianPackage() {
     }
+    public UDianPackage(int physicalId,byte command,byte []data ){
+        this.dny="DNY";
+        this.physicalId = physicalId;
+        this.setMessageId(getMessageId());
+        this.setCommand(this.command);
+        this.setData(data);
+        this.setLength((calLength()));
+    }
 
     public UDianPackage getReply(byte[] data) {
         UDianPackage uDianPackage = new UDianPackage();
@@ -88,5 +98,9 @@ public class UDianPackage {
         ByteBuf buffer = Unpooled.buffer(hexString.length() / 2);
         buffer.writeBytes(DatatypeConverter.parseHexBinary(hexString));
         return AP3000Codec.getYouDianPackage(buffer);
+    }
+
+    private static int generateMessageId(){
+        return  (seq.getAndDecrement()&0xFFFF);
     }
 }

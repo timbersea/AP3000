@@ -44,4 +44,10 @@ public class UDianPackageTest extends TestCase {
                 DatatypeConverter.printHexBinary(bytes));
 
     }
+
+    public void testGenerateMessageId() {
+        for (int i = 0; i < 7000; i++) {
+            //log.info("testGenerateMessageId:[{}]",UDianPackage.generateMessageId() );
+        }
+    }
 }
