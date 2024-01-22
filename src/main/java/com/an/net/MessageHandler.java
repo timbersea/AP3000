@@ -57,7 +57,9 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                 register.setVirtualId(data[3]);
                 register.setDeviceType(data[4]);
                 register.setWorkPattern(data[5]);
-                register.setPowerVersion((short) ((data[7] << 8) | (data[6] & 0xff)));
+                if(data.length==8){
+                    register.setPowerVersion((short) ((data[7] << 8) | (data[6] & 0xff)));
+                }
 
                 ctx.writeAndFlush(msg.getReply(new byte[]{0}));
 

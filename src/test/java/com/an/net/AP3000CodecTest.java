@@ -13,15 +13,12 @@ import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.StandardCharsets;
 
 public class AP3000CodecTest {
-    @Before
-    public void setUp() throws Exception {
-
-    }
+    EmbeddedChannel channel;
     @Before
     public void before(){
         //建立连接后发送simCardNo
         String hexString = "3839383630343438313631383730303634383135";
-        EmbeddedChannel channel = new EmbeddedChannel(new LoggingHandler(LogLevel.DEBUG),new AP3000Codec(),
+         channel = new EmbeddedChannel(new LoggingHandler(LogLevel.DEBUG),new AP3000Codec(),
                 new MessageHandler());
         ByteBuf out = Unpooled.buffer();
         out.writeBytes(DatatypeConverter.parseHexBinary(hexString));
