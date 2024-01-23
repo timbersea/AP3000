@@ -47,7 +47,7 @@ public class UDianPackageTest extends TestCase {
 
     public void testGenerateMessageId() {
         for (int i = 0; i < 7000; i++) {
-            //log.info("testGenerateMessageId:[{}]",UDianPackage.generateMessageId() );
+            log.info("testGenerateMessageId:[{}]",UDianPackage.generateMessageId() );
         }
     }
 }

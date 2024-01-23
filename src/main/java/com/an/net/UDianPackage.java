@@ -4,15 +4,11 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.util.ReferenceCountUtil;
-import lombok.Getter;
-import lombok.Setter;
 
 import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@Setter
-@Getter
 public class UDianPackage {
     private static final AtomicInteger seq=new  AtomicInteger();
 
@@ -40,6 +36,58 @@ public class UDianPackage {
 
     public int getDeviceCode() {
         return physicalId & 0x00FFFFFF;
+    }
+
+    public String getDny() {
+        return dny;
+    }
+
+    public void setDny(String dny) {
+        this.dny = dny;
+    }
+
+    public short getLength() {
+        return length;
+    }
+
+    public void setLength(short length) {
+        this.length = length;
+    }
+
+    public int getPhysicalId() {
+        return physicalId;
+    }
+
+    public void setPhysicalId(int physicalId) {
+        this.physicalId = physicalId;
+    }
+
+    public short getMessageId() {
+        return messageId;
+    }
+
+    public void setMessageId(short messageId) {
+        this.messageId = messageId;
+    }
+
+    public byte getCommand() {
+        return command;
+    }
+
+    public void setCommand(byte command) {
+        this.command = command;
+    }
+
+    public byte[] getData() {
+        return data;
+    }
+
+    public void setData(byte[] data) {
+        this.data = data;
+    }
+
+    public void setCheck(short check) {
+        this.check = check;
     }
 
     @Override
@@ -76,8 +124,8 @@ public class UDianPackage {
     public UDianPackage(int physicalId,byte command,byte []data ){
         this.dny="DNY";
         this.physicalId = physicalId;
-        this.setMessageId(getMessageId());
-        this.setCommand(this.command);
+        this.setMessageId(generateMessageId());
+        this.setCommand(command);
         this.setData(data);
         this.setLength((calLength()));
     }
@@ -100,7 +148,8 @@ public class UDianPackage {
         return AP3000Codec.getYouDianPackage(buffer);
     }
 
-    private static int generateMessageId(){
-        return  (seq.getAndDecrement()&0xFFFF);
+    public static short generateMessageId(){
+       // return (short) (seq.getAndDecrement()&0x07FFF);
+        return 2;
     }
 }

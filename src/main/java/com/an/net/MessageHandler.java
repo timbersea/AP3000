@@ -16,6 +16,10 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, UDianPackage msg) throws Exception {
+        ctx.channel().attr(GlobalContext.physicalIdAttr).setIfAbsent(msg.getPhysicalId());
+        GlobalContext.online(msg.getPhysicalId(),ctx);
+        GlobalContext.completeResponse(msg.getMessageId(),msg);
+
         log.debug("channelRead0:ctx = [{}], msg = [{}]", ctx, msg);
         byte command = msg.getCommand();
         byte[] data = msg.getData();
@@ -57,7 +61,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                 register.setVirtualId(data[3]);
                 register.setDeviceType(data[4]);
                 register.setWorkPattern(data[5]);
-                if(data.length==8){
+                if (data.length == 8) {
                     register.setPowerVersion((short) ((data[7] << 8) | (data[6] & 0xff)));
                 }
 
@@ -210,11 +214,13 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
+        ctx.channel().attr(GlobalContext.activeTimestamp).setIfAbsent(System.currentTimeMillis());
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         super.channelInactive(ctx);
+        GlobalContext.offline(ctx);
     }
 
     @Override
