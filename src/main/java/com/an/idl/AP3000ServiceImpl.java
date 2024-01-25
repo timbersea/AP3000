@@ -7,11 +7,13 @@ import io.netty.buffer.Unpooled;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import javax.xml.bind.DatatypeConverter;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+@Component
 public class AP3000ServiceImpl implements AP3000Service.Iface {
     private static final Logger log = LoggerFactory.getLogger(AP3000ServiceImpl.class);
 

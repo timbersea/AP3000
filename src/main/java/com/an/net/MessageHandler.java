@@ -16,11 +16,13 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, UDianPackage msg) throws Exception {
+        if(log.isDebugEnabled()){
+            log.debug("physicalId: = [{}], msg = [{}]", ctx.channel().attr(GlobalContext.physicalIdAttr).get(), msg);
+        }
         ctx.channel().attr(GlobalContext.physicalIdAttr).setIfAbsent(msg.getPhysicalId());
         GlobalContext.online(msg.getPhysicalId(),ctx);
         GlobalContext.completeResponse(msg.getMessageId(),msg);
 
-        log.debug("channelRead0:ctx = [{}], msg = [{}]", ctx, msg);
         byte command = msg.getCommand();
         byte[] data = msg.getData();
         MessageDispatcher.getService(command);
@@ -180,7 +182,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
             }
             case 0x42: {
                 log.info("data = [{}]", data[0]);
-
+                break;
             }
             case 0x43: {
                 ChargeFinish chargeFinish = new ChargeFinish();
@@ -202,6 +204,10 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                 portStatus.setPushType(byteBuf.readByte());
                 portStatus.setPort(byteBuf.readByte());
                 portStatus.setOrderId(DatatypeConverter.printHexBinary(byteBuf.readBytes(16).array()));
+                break;
+            }
+            default:{
+                log.debug("unknown command");
             }
 
         }

@@ -53,6 +53,11 @@
             <artifactId>AP3000IDL</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>com.anju</groupId>
+            <artifactId>anju-common</artifactId>
+            <version>3.8.6</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

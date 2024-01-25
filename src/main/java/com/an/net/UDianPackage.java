@@ -149,7 +149,6 @@ public class UDianPackage {
     }
 
     public static short generateMessageId(){
-       // return (short) (seq.getAndDecrement()&0x07FFF);
-        return 2;
+        return (short) (seq.getAndDecrement()&0x07FFF);
     }
 }

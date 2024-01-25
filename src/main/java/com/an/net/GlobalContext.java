@@ -36,7 +36,9 @@ public class GlobalContext {
     }
 
     public static void offline(ChannelHandlerContext deviceCode) {
-        physicalIdChannelContext.remove(deviceCode.channel().attr(physicalIdAttr).get());
+        if(deviceCode.channel().attr(physicalIdAttr).get()!=null){
+            physicalIdChannelContext.remove(deviceCode.channel().attr(physicalIdAttr).get());
+        }
         log.info("offline:deviceCode = [{}]", deviceCode);
     }
 
