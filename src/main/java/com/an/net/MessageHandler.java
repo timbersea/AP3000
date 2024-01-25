@@ -10,6 +10,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 
 import javax.xml.bind.DatatypeConverter;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(MessageHandler.class);
@@ -221,6 +222,12 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
         ctx.channel().attr(GlobalContext.activeTimestamp).setIfAbsent(System.currentTimeMillis());
+        ctx.executor().schedule(() -> {
+            if(ctx.channel().attr(GlobalContext.physicalIdAttr).get()==null){
+                log.warn("ctx :[{}] no physicalId after connected for 30 seconds,will be close", ctx);
+                ctx.close();
+            }
+        },30, TimeUnit.SECONDS);
     }
 
     @Override
