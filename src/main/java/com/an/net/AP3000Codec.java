@@ -70,35 +70,40 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
     }
 
     public static UDianPackage getYouDianPackage(ByteBuf decoded) {
-        byte[] toCalCheck = new byte[decoded.readableBytes() - 2];//去掉最后两字节的检校值后的数据参与计算校验值
-        decoded.getBytes(0, toCalCheck, 0, toCalCheck.length);
-        decoded.readBytes(3);
-        int length = decoded.readUnsignedShortLE();
-        int physicalId = decoded.readIntLE();
-        int messageId = decoded.readUnsignedShortLE();
-        byte command = decoded.readByte();
-        ByteBuf data = decoded.readBytes(length - 4 - 2 - 1 - 2);
-        int check = decoded.readUnsignedShortLE();
-        ReferenceCountUtil.release(decoded);
+       try {
+           byte[] toCalCheck = new byte[decoded.readableBytes() - 2];//去掉最后两字节的检校值后的数据参与计算校验值
+           decoded.getBytes(0, toCalCheck, 0, toCalCheck.length);
+           decoded.readBytes(3);
+           int length = decoded.readUnsignedShortLE();
+           int physicalId = decoded.readIntLE();
+           int messageId = decoded.readUnsignedShortLE();
+           byte command = decoded.readByte();
+           ByteBuf data = decoded.readBytes(length - 4 - 2 - 1 - 2);
+           int check = decoded.readUnsignedShortLE();
 
 
-        UDianPackage uDianPackage = new UDianPackage();
-        uDianPackage.setDny("DNY");
-        uDianPackage.setLength((short) length);
-        uDianPackage.setPhysicalId(physicalId);
-        uDianPackage.setMessageId((short) messageId);
-        uDianPackage.setCommand(command);
-        byte[] bytes = new byte[length - 4 - 2 - 1 - 2];
-        data.readBytes(bytes);
-        uDianPackage.setData(bytes);
-        uDianPackage.setCheck((short) check);
+           UDianPackage uDianPackage = new UDianPackage();
+           uDianPackage.setDny("DNY");
+           uDianPackage.setLength((short) length);
+           uDianPackage.setPhysicalId(physicalId);
+           uDianPackage.setMessageId((short) messageId);
+           uDianPackage.setCommand(command);
+           byte[] bytes = new byte[length - 4 - 2 - 1 - 2];
+           data.readBytes(bytes);
+           uDianPackage.setData(bytes);
+           uDianPackage.setCheck((short) check);
 
-        int calCheckValue = calCheck(toCalCheck);
-        if (calCheckValue != check) {
-            log.debug("cal check value :[{}],receive chekcValue[{}]", calCheckValue, check);
-            throw new IllegalArgumentException("calCheckValue: " + calCheckValue + " not equals to check: " + check);
-        }
-        return uDianPackage;
+           int calCheckValue = calCheck(toCalCheck);
+           if (calCheckValue != check) {
+               log.debug("cal check value :[{}],receive chekcValue[{}]", calCheckValue, check);
+               throw new IllegalArgumentException("calCheckValue: " + calCheckValue + " not equals to check: " + check);
+           }
+           return uDianPackage;
+       }catch (Exception e){
+           throw e;
+       }finally {
+           ReferenceCountUtil.release(decoded);
+       }
     }
 
     private static int calCheck(byte[] data) {
@@ -128,6 +133,7 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
         if (in.readableBytes() < 12) {
             return null;
         } else if (in.readableBytes() > 256) {
+            ReferenceCountUtil.release(in);
             throw new TooLongFrameException();
         } else {
             ByteBuf byteBuf = in.slice(0, 12);
