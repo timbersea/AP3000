@@ -38,8 +38,8 @@ public class GlobalContext {
     public static void offline(ChannelHandlerContext deviceCode) {
         if(deviceCode.channel().attr(physicalIdAttr).get()!=null){
             physicalIdChannelContext.remove(deviceCode.channel().attr(physicalIdAttr).get());
+            log.info("offline:deviceCode = [{}]", deviceCode);
         }
-        log.info("offline:deviceCode = [{}]", deviceCode);
     }
 
     public static void completeResponse(Short messageId, UDianPackage uDianPackage) {
