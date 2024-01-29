@@ -54,23 +54,19 @@ public class GlobalContext {
 
     public static void asyncWriteData(Integer physicalId, UDianPackage uDianPackage) throws TException {
         ChannelHandlerContext channelHandlerContext = physicalIdChannelContext.get(physicalId);
-        if (channelHandlerContext == null) {
+        if (channelHandlerContext == null||!channelHandlerContext.channel().isActive()) {
             throw new TApplicationException(physicalId + " is not connect to server");
         }
         channelHandlerContext.writeAndFlush(uDianPackage);
     }
 
     public static UDianPackage requestAndResponse(Integer physicalId, UDianPackage uDianPackage) throws TException {
-        ChannelHandlerContext channelHandlerContext = physicalIdChannelContext.get(physicalId);
-        if (channelHandlerContext == null) {
-            throw new TApplicationException(physicalId + " is not connect to server");
-        }
+        asyncWriteData(physicalId,uDianPackage);
         CompletableFuture<UDianPackage> uDianPackageCompletableFuture = new CompletableFuture<>();
         completableFutureMap.put(uDianPackage.getMessageId(), uDianPackageCompletableFuture);
         try {
             log.debug("request to physicalId: [{}] messageId [{}]  wait for response", physicalId,
                     uDianPackage.getMessageId());
-            channelHandlerContext.writeAndFlush(uDianPackage);
             return uDianPackageCompletableFuture.get(30, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             Thread.interrupted();

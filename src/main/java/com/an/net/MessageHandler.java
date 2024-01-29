@@ -2,7 +2,6 @@ package com.an.net;
 
 import com.an.entity.req.*;
 import com.an.entity.resp.ChargePortOrderConfirmResp;
-import com.an.service.MessageDispatcher;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -10,7 +9,6 @@ import io.netty.channel.SimpleChannelInboundHandler;
 
 import javax.xml.bind.DatatypeConverter;
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
 
 public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(MessageHandler.class);
@@ -24,9 +22,9 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
         GlobalContext.online(msg.getPhysicalId(),ctx);
         GlobalContext.completeResponse(msg.getMessageId(),msg);
 
-        byte command = msg.getCommand();
+        int command = msg.getCommand();
         byte[] data = msg.getData();
-        MessageDispatcher.getService(command);
+       // MessageDispatcher.getService(command);
         switch (command) {
             case 0x01: {
                 HeatBeat heatBeat = new HeatBeat();
@@ -207,8 +205,11 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                 portStatus.setOrderId(DatatypeConverter.printHexBinary(byteBuf.readBytes(16).array()));
                 break;
             }
+            case 0x82:{
+                break;
+            }
             default:{
-                log.debug("unknown command");
+                log.debug("unknown command [{}]",msg);
             }
 
         }
@@ -222,12 +223,12 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
         ctx.channel().attr(GlobalContext.activeTimestamp).setIfAbsent(System.currentTimeMillis());
-        ctx.executor().schedule(() -> {
-            if(ctx.channel().attr(GlobalContext.physicalIdAttr).get()==null){
-                log.warn("ctx :[{}] no physicalId after connected for 30 seconds,will be close", ctx);
-                ctx.close();
-            }
-        },30, TimeUnit.SECONDS);
+//        ctx.executor().schedule(() -> {
+//            if(ctx.channel().attr(GlobalContext.physicalIdAttr).get()==null){
+//                log.warn("ctx :[{}] no physicalId after connected for 30 seconds,will be close", ctx);
+//                ctx.close();
+//            }
+//        },30, TimeUnit.SECONDS);
     }
 
     @Override
