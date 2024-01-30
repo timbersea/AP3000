@@ -143,8 +143,10 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
             throw new TooLongFrameException();
         } else {
             ByteBuf byteBuf = in.slice(0, 12);
-            byteBuf.readBytes(3);
+            byteBuf.retain();
+            byteBuf.skipBytes(3);
             int length = byteBuf.readUnsignedShortLE();
+            ReferenceCountUtil.release(byteBuf);
             if (in.readableBytes() < (length + 3)) {
                 in.resetReaderIndex();
                 return null;
