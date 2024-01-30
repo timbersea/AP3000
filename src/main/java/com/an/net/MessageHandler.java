@@ -1,16 +1,28 @@
 package com.an.net;
 
+import com.an.common.ConsumerNet;
+import com.an.common.ResponseCode;
 import com.an.entity.req.*;
 import com.an.entity.resp.ChargePortOrderConfirmResp;
+import com.anju.common.dto.OrderAutoFinishChargeDto;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import javax.xml.bind.DatatypeConverter;
+import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Date;
 
+@Component
+@ChannelHandler.Sharable
 public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
+    @Resource
+    ConsumerNet consumerNet;
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(MessageHandler.class);
 
     @Override
@@ -138,6 +150,32 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                 settleConsume.setTimestamp((data[12 + 8] & 0xFF) | ((data[12 + 9] & 0xFF) << 8) | ((data[12 + 10] & 0xFF) << 16) | ((data[12 + 11] & 0xFF) << 24));
                 settleConsume.setOccupiedTime((short) ((data[12 + 13] << 8) | (data[12 + 12] & 0xff)));
                 ctx.writeAndFlush(msg.getReply(new byte[]{0}));
+
+                OrderAutoFinishChargeDto dto = new OrderAutoFinishChargeDto();
+                dto.setOrderNo(settleConsume.getOrderId());
+                dto.setPileCode(msg.getDeviceCode()+"");
+                dto.setGunCode(settleConsume.getPort()+"");
+                dto.setStartTime(new Date(new Date().getTime()-1*3600*1000));
+                dto.setEndTime(new Date());
+
+
+                dto.setElectricityStart("0");
+                dto.setElectricityEnd(""+settleConsume.getElectric());
+                // 总电量
+                dto.setTotalElectricity(new BigDecimal(settleConsume.getElectric()+""));
+                // 计损总电量
+                dto.setLossTotalElectricity(dto.getTotalElectricity());
+                // 消费金额
+                dto.setConsumerAmount(new BigDecimal("3.00"));
+                dto.setStopReason(settleConsume.getStopReason()+"");
+                dto.setStopReasonName(ResponseCode.getStopReasonDescription(settleConsume.getStopReason()));
+
+//                String key = CacheConstants.PILE_ORDER_SETTLE_DATA + orderNo;
+//                redisCache.setCacheObject(key, dto, 7, TimeUnit.DAYS);
+//
+//                log.info("ykc1.6订单结算:{}", orderNo);
+//                // 通知消费端，订单已结束
+                consumerNet.finishOrder(dto);
                 log.info("data = [{}]", settleConsume);
                 break;
             }
@@ -167,7 +205,8 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                 portChargePowerHeatBeat.setMaxPower(byteBuf.readShortLE());
                 portChargePowerHeatBeat.setMinPower(byteBuf.readShortLE());
                 portChargePowerHeatBeat.setAvgPower(byteBuf.readShortLE());
-                portChargePowerHeatBeat.setOrderId(DatatypeConverter.printHexBinary(byteBuf.readBytes(16).array()));
+                byteBuf.skipBytes(8);
+                portChargePowerHeatBeat.setOrderId(byteBuf.readLongLE()+"");
                 portChargePowerHeatBeat.setTimeElectric(byteBuf.readShortLE());
                 portChargePowerHeatBeat.setPeakPower(byteBuf.readShortLE());
                 portChargePowerHeatBeat.setVoltage(byteBuf.readShortLE());
@@ -175,7 +214,9 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                 portChargePowerHeatBeat.setEnvironmentTemperature(byteBuf.readByte());
                 portChargePowerHeatBeat.setPortTemperature(byteBuf.readByte());
                 portChargePowerHeatBeat.setTimestamp(byteBuf.readIntLE());
-                portChargePowerHeatBeat.setTakeTime(byteBuf.readShortLE());
+                if(byteBuf.readableBytes()>=2){
+                    portChargePowerHeatBeat.setTakeTime(byteBuf.readShortLE());
+                }
                 log.info("data = [{}]", portChargePowerHeatBeat);
                 break;
             }
@@ -205,7 +246,16 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                 portStatus.setOrderId(DatatypeConverter.printHexBinary(byteBuf.readBytes(16).array()));
                 break;
             }
-            case 0x82:{
+
+            //0x82= 无符号的130，补码为-126
+            case -126:{
+                ByteBuf byteBuf = Unpooled.copiedBuffer(data);
+                byte response = byteBuf.readByte();
+                byteBuf.skipBytes(8);
+                long orderNo = byteBuf.readLongLE();
+                byte port = byteBuf.readByte();
+                byte waitPort = byteBuf.readByte();
+                log.info("0x82 :response:[{}] orderNo:[{}] port:[{}] waitPort:[{}]",response,orderNo,port,waitPort );
                 break;
             }
             default:{
@@ -292,4 +342,6 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
         }
         return (data[0] & 0xFF) | ((data[1] & 0xFF) << 8) | ((data[2] & 0xFF) << 16) | ((data[3] & 0xFF) << 24);//4字节小端序
     }
+
+
 }

@@ -78,7 +78,7 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
            int length = decoded.readUnsignedShortLE();
            int physicalId = decoded.readIntLE();
            int messageId = decoded.readUnsignedShortLE();
-           byte command = decoded.readByte();
+           int command = decoded.readByte();
             data = decoded.readBytes(length - 4 - 2 - 1 - 2);
             data.retain();
            int check = decoded.readUnsignedShortLE();

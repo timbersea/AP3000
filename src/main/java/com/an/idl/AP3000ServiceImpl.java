@@ -9,9 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import javax.xml.bind.DatatypeConverter;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 
 @Component
 public class AP3000ServiceImpl implements AP3000Service.Iface {
@@ -36,7 +34,8 @@ public class AP3000ServiceImpl implements AP3000Service.Iface {
         toWrite.writeByte(p.getPort());
         toWrite.writeByte(p.getChargeCommand());
         toWrite.writeShortLE(p.getChargeTimeElectric());
-        toWrite.writeBytes(p.getOrderNo().getBytes(StandardCharsets.UTF_8));
+        toWrite.writeLongLE(0L);
+        toWrite.writeLongLE(Long.parseLong(new String(p.getOrderNo())));
         toWrite.writeShortLE(p.getMaxChargeTime());
         toWrite.writeShortLE(p.getMaxChargePower());
         toWrite.writeByte(p.getQRCodeLight());
@@ -58,7 +57,7 @@ public class AP3000ServiceImpl implements AP3000Service.Iface {
         startChargeResp.setResp(buffer.readByte());
         byte[] bytes = new byte[16];
         buffer.readBytes(bytes);
-        startChargeResp.setOrderNo(DatatypeConverter.printHexBinary(bytes));
+        startChargeResp.setOrderNo(p.getOrderNo());
         startChargeResp.setPort(buffer.readByte());
         startChargeResp.setWaitPort(buffer.readShortLE());
         return startChargeResp;
@@ -367,7 +366,7 @@ public class AP3000ServiceImpl implements AP3000Service.Iface {
     public StopChargeResp stopCharge(int physicalId, StopCharge p) throws TException {
         ByteBuf toWrite = Unpooled.buffer(17);
         toWrite.writeByte(p.getPort());
-        toWrite.writeBytes(p.getOrderNo().getBytes(StandardCharsets.UTF_8));
+        toWrite.writeBytes(p.getOrderNo());
         UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0x72, toWrite.array());
 
         UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
@@ -375,7 +374,7 @@ public class AP3000ServiceImpl implements AP3000Service.Iface {
 
         ByteBuf byteBuf = Unpooled.copiedBuffer(response.getData());
         stopChargeResp.setResp(byteBuf.readByte());
-        stopChargeResp.setOrderNo(DatatypeConverter.printHexBinary(byteBuf.readBytes(16).array()));
+        stopChargeResp.setOrderNo(p.getOrderNo());
         return stopChargeResp;
     }
 

@@ -355,8 +355,6 @@ public class AP3000CodecTest {
     @Test
     public void test8(){
         String hexString = "444E5932003B37AB040A00060101100E300001E803B0042003E803201909011800001300303801020304050100E8039808C7015500DA08";
-        EmbeddedChannel channel = new EmbeddedChannel(new LoggingHandler(LogLevel.DEBUG),new AP3000Codec(),
-                new MessageHandler());
         UDianPackage msg = UDianPackage.buildFromHexString(hexString);
         ByteBuf out = Unpooled.buffer();
         out.writeBytes(msg.getDny().getBytes(StandardCharsets.UTF_8));
@@ -370,5 +368,22 @@ public class AP3000CodecTest {
         channel.writeInbound(out);
         channel.flush();
         channel.readInbound();
+    }
+    @Test
+    public void test9(){
+        String hexString="444E5928003B37AB04010003100EE80330000101000000000120190901180000130030380102030405E8034405";
+        UDianPackage msg = UDianPackage.buildFromHexString(hexString);
+        ByteBuf out = Unpooled.buffer();
+        out.writeBytes(msg.getDny().getBytes(StandardCharsets.UTF_8));
+        out.writeShortLE(msg.getLength());
+        out.writeIntLE(msg.getPhysicalId());
+        out.writeShortLE(msg.getMessageId());
+        out.writeByte(msg.getCommand());
+        out.writeBytes(msg.getData());
+        out.writeShortLE(msg.getCheck());
+        //验证写数据返回True
+        channel.writeInbound(out);
+        channel.flush();
+        Object o = channel.readInbound();
     }
 }

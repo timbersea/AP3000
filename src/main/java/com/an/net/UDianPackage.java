@@ -16,7 +16,7 @@ public class UDianPackage {
     private short length;
     private int physicalId;
     private short messageId;
-    private short command;//协议中实际占一个字节
+    private int command;//协议中实际占一个字节
 
     private byte[] data;
 
@@ -70,11 +70,11 @@ public class UDianPackage {
         this.messageId = messageId;
     }
 
-    public short getCommand() {
+    public int getCommand() {
         return command;
     }
 
-    public void setCommand(short command) {
+    public void setCommand(int command) {
         this.command = command;
     }
 
