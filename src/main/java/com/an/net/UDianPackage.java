@@ -1,7 +1,6 @@
 package com.an.net;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.util.ReferenceCountUtil;
 
@@ -104,7 +103,7 @@ public class UDianPackage {
     }
 
     public String toHexString() {
-        ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
+        ByteBuf out = Unpooled.buffer(this.length);
         out.writeBytes(this.dny.getBytes(StandardCharsets.UTF_8));
         out.writeShortLE(this.length);
         out.writeIntLE(this.physicalId);

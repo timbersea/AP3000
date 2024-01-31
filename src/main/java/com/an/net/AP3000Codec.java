@@ -23,6 +23,9 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
     @Override
     protected void encode(ChannelHandlerContext channelHandlerContext, UDianPackage msg, ByteBuf out) throws Exception {
         out.writeBytes(msg.getDny().getBytes(StandardCharsets.UTF_8));
+        if(msg.getLength()>256){
+            throw new TooLongFrameException("length must less than 256 "+msg.toHexString());
+        }
         out.writeShortLE(msg.getLength());
         out.writeIntLE(msg.getPhysicalId());
         out.writeShortLE(msg.getMessageId());
