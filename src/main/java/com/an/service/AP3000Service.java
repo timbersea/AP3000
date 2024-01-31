@@ -3,9 +3,9 @@ package com.an.service;
 
 import com.an.common.ConsumerNet;
 import com.an.common.ResponseCode;
-import com.an.idl.AP3000ServiceImpl;
-import com.an.idl.StartCharge;
-import com.an.idl.StartChargeResp;
+import com.an.idl.server.AP3000ServiceImpl;
+import com.an.idl.ap3000.StartCharge;
+import com.an.idl.ap3000.StartChargeResp;
 import com.anju.common.core.domain.AjaxResult;
 import com.anju.common.dto.OrderAutoFinishChargeDto;
 import com.anju.common.dto.iot.StartChargeRequestDto;
@@ -16,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.nio.charset.StandardCharsets;
 
 @Service
 public class AP3000Service {
@@ -33,7 +32,7 @@ public class AP3000Service {
         startCharge.setPort(Byte.parseByte(dto.getGunCode()));
         startCharge.setChargeCommand((byte) 1);
         startCharge.setChargeTimeElectric((short) 0);
-        startCharge.setOrderNo(dto.getOrderNo().getBytes(StandardCharsets.UTF_8));
+        startCharge.setOrderNo(Long.parseUnsignedLong(dto.getOrderNo()));
         startCharge.setMaxChargePower((short) 0);
         startCharge.setMaxChargeTime((short) 0);
         startCharge.setQRCodeLight((byte) 1);
@@ -57,7 +56,7 @@ public class AP3000Service {
         startCharge.setPort((byte)Byte.parseByte(dto.getGunCode()));
         startCharge.setChargeCommand((byte) 0);
         startCharge.setChargeTimeElectric((short) 0);
-        startCharge.setOrderNo("1111111111111111111".getBytes(StandardCharsets.UTF_8));
+        startCharge.setOrderNo(1111111111111111111L);
         startCharge.setMaxChargePower((short) 0);
         startCharge.setMaxChargeTime((short) 0);
         startCharge.setQRCodeLight((byte) 1);

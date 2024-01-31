@@ -2,20 +2,24 @@ package com.an.net;
 
 import com.an.common.ConsumerNet;
 import com.an.common.ResponseCode;
-import com.an.entity.req.*;
-import com.an.entity.resp.ChargePortOrderConfirmResp;
+import com.an.entity.req.ChargeFinish;
+import com.an.entity.req.ChargePortOrderConfirm;
+import com.an.entity.req.PortChargePowerHeatBeat;
+import com.an.entity.req.PortStatus;
+import com.an.idl.client.ConsumeServiceClient;
+import com.an.idl.consumer.SwipingCardResp;
 import com.anju.common.dto.OrderAutoFinishChargeDto;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.ReferenceCountUtil;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import javax.xml.bind.DatatypeConverter;
 import java.math.BigDecimal;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Date;
 
 @Component
@@ -23,250 +27,268 @@ import java.util.Date;
 public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
     @Resource
     ConsumerNet consumerNet;
+    @Resource
+
+    ConsumeServiceClient consumerServiceClient;
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(MessageHandler.class);
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, UDianPackage msg) throws Exception {
-        if(log.isDebugEnabled()){
+        if (log.isDebugEnabled()) {
             log.debug("physicalId: = [{}], msg = [{}]", ctx.channel().attr(GlobalContext.physicalIdAttr).get(), msg);
         }
-        ctx.channel().attr(GlobalContext.physicalIdAttr).setIfAbsent(msg.getPhysicalId());
-        GlobalContext.online(msg.getPhysicalId(),ctx);
-        GlobalContext.completeResponse(msg.getMessageId(),msg);
+        int physicalId = msg.getPhysicalId();
+        ctx.channel().attr(GlobalContext.physicalIdAttr).setIfAbsent(physicalId);
+        GlobalContext.online(physicalId, ctx);
+        GlobalContext.completeResponse(msg.getMessageId(), msg);
 
         int command = msg.getCommand();
-        byte[] data = msg.getData();
-       // MessageDispatcher.getService(command);
-        switch (command) {
-            case 0x01: {
-                HeatBeat heatBeat = new HeatBeat();
-                //小端转大端
-                heatBeat.setFirmwareVersion((short) ((data[1] << 8) | (data[0] & 0xff)));
-                heatBeat.setVoltage((short) ((data[3] << 8) | (data[2] & 0xff)));
-                heatBeat.setPortNum(data[4]);
-                byte portNum = heatBeat.getPortNum();
-                byte[] portStatus = new byte[portNum];
-                byte[] currentPower = new byte[portNum * 2];
-                byte[] peakPower = new byte[portNum * 2];
-                if (portNum > 0) {
-                    System.arraycopy(data, 5, portStatus, 0, portNum);
-                    System.arraycopy(data, 5 + portNum, currentPower, 0, portNum * 2);
-                    System.arraycopy(data, 5 + portNum + portNum * 2, peakPower, 0, portNum * 2);
+         byte[] data = msg.getData();
+        ByteBuf byteBufData = Unpooled.buffer(data.length);
+        byteBufData.writeBytes(data);
+        // MessageDispatcher.getService(command);
+        try {
+            switch (command) {
+                case 0x01: {
+                    com.an.idl.consumer.HeatBeat heatBeat = new com.an.idl.consumer.HeatBeat();
+                    //小端转大端
+                    heatBeat.setFirmwareVersion(byteBufData.readShortLE());
+                    heatBeat.setVoltage(byteBufData.readShortLE());
+                    heatBeat.setPortNum(byteBufData.readByte());
+                    byte portNum = heatBeat.getPortNum();
+                    byte[] portStatus = new byte[portNum];
+                    ArrayList<Short> currentPower = new ArrayList<>(portNum * 2);
+                    ArrayList<Short> peakPower = new ArrayList<>(portNum * 2);
+
+                    for (int i = 0; i < portNum; i++) {
+                        portStatus[i] = byteBufData.readByte();
+                    }
+                    for (int i = 0; i < portNum; i++) {
+                        currentPower.add(byteBufData.readShortLE());
+                    }
+                    for (int i = 0; i < portNum; i++) {
+                        peakPower.add(byteBufData.readShortLE());
+                    }
+
+                    heatBeat.setPortStatus(portStatus);
+                    heatBeat.setCurrentPower(currentPower);
+                    heatBeat.setPeakPower(peakPower);
+                    heatBeat.setVirtualId(byteBufData.readByte());
+                    heatBeat.setSignalStrength(byteBufData.readByte());
+                    heatBeat.setDeviceType(byteBufData.readByte());
+                    heatBeat.setEnvironmentTemperature(byteBufData.readByte());
+                    heatBeat.setWorkPattern(byteBufData.readByte());
+
+                    ctx.writeAndFlush(msg.getReply(new byte[]{0}));
+                    log.info(" data = [{}]", heatBeat);
+                    log.info(("deviceType :[{}] deviceCode[{}]"), msg.getDeviceType(), msg.getDeviceCode());
+                    consumerServiceClient.heatBeat(physicalId, heatBeat);
+                    break;
                 }
-                heatBeat.setPortStatus(portStatus);
-                heatBeat.setCurrentPower(byte2shortLE(currentPower));
-                heatBeat.setPeakPower(byte2shortLE(peakPower));
-                heatBeat.setVirtualId(data[data.length - 5]);
-                heatBeat.setSignalStrength(data[data.length - 4]);
-                heatBeat.setDeviceType(data[data.length - 3]);
-                heatBeat.setEnvironmentTemperature(data[data.length - 2]);
-                heatBeat.setWorkPattern(data[data.length - 1]);
+                case 0x20: {
+                    com.an.idl.consumer.Register register = new com.an.idl.consumer.Register();
+                    register.setFirmwareVersion(byteBufData.readShortLE());
+                    register.setPortNum(byteBufData.readByte());
+                    register.setVirtualId(byteBufData.readByte());
+                    register.setDeviceType(byteBufData.readByte());
+                    register.setWorkPattern(byteBufData.readByte());
+                    if (byteBufData.readableBytes() >= 2) {
+                        register.setPowerVersion(byteBufData.readShortLE());
+                    }
+                    consumerServiceClient.register(physicalId, register);
 
-                ctx.writeAndFlush(msg.getReply(new byte[]{0}));
-                log.info(" data = [{}]", heatBeat);
-                log.info(("deviceType :[{}] deviceCode[{}]"), msg.getDeviceType(), msg.getDeviceCode());
-                break;
-            }
-            case 0x20: {
-                Register register = new Register();
-                register.setFirmwareVersion((short) ((data[1] << 8) | (data[0] & 0xff)));
-                register.setPortNum(data[2]);
-                register.setVirtualId(data[3]);
-                register.setDeviceType(data[4]);
-                register.setWorkPattern(data[5]);
-                if (data.length == 8) {
-                    register.setPowerVersion((short) ((data[7] << 8) | (data[6] & 0xff)));
+                    ctx.writeAndFlush(msg.getReply(new byte[]{0}));
+
+                    log.info(" data = [{}]", register);
+                    break;
                 }
+                case 0x21: {
+                    com.an.idl.consumer.HeatBeat21 heatBeat21 = new com.an.idl.consumer.HeatBeat21();
+                    heatBeat21.setVoltage(byteBufData.readShortLE());
+                    heatBeat21.setPortNum(byteBufData.readByte());
+                    byte[] portStatus = new byte[heatBeat21.getPortNum()];
+                    if (heatBeat21.getPortNum() > 0) {
+                        for (int i = 0; i < heatBeat21.getPortNum(); i++) {
+                            portStatus[i] = byteBufData.readByte();
+                        }
+                    }
+                    heatBeat21.setPortStatus(portStatus);
+                    heatBeat21.setSignalStrength(byteBufData.readByte());
+                    heatBeat21.setEnvironmentTemperature(byteBufData.readByte());
 
-                ctx.writeAndFlush(msg.getReply(new byte[]{0}));
-
-                log.info(" data = [{}]", register);
-                break;
-            }
-            case 0x21: {
-                HeatBeat21 heatBeat21 = new HeatBeat21();
-                heatBeat21.setVoltage((short) ((data[1] << 8) | (data[0] & 0xff)));
-                heatBeat21.setPortNum(data[2]);
-                byte[] portStatus = new byte[data[2]];
-                if (data[2] > 0) {
-                    System.arraycopy(data, 3, portStatus, 0, data[2]);
+                    consumerServiceClient.heatBeat21(physicalId, heatBeat21);
+                    ctx.writeAndFlush(msg.getReply(new byte[]{0}));
+                    log.info(" data = [{}]", heatBeat21);
+                    break;
                 }
-                heatBeat21.setPortStatus(portStatus);
-                heatBeat21.setSignalStrength(data[data.length - 2]);
-                heatBeat21.setEnvironmentTemperature(data[data.length - 1]);
-
-                ctx.writeAndFlush(msg.getReply(new byte[]{0}));
-                log.info(" data = [{}]", heatBeat21);
-                break;
-            }
-            case 0x22: {
-                Integer number = (int) (System.currentTimeMillis() / 1000);
-                byte[] byteArray = new byte[4];
-                byteArray[0] = (byte) (number >> 24);
-                byteArray[1] = (byte) (number >> 16);
-                byteArray[2] = (byte) (number >> 8);
-                byteArray[3] = (byte) (number & 0x000000FF);
-                ctx.writeAndFlush(msg.getReply(byteArray));
-                break;
-            }
-            case 0x02: {
-                SwipingCard swipingCard = new SwipingCard();
-                int result =
-                        ((data[0] & 0xFF) << 24) | ((data[1] & 0xFF) << 16) | ((data[2] & 0xFF) << 8) | (data[3] & 0xFF);//4字节大端序
-                swipingCard.setCardId(result);
-                swipingCard.setCardType(data[4]);
-                swipingCard.setPort(data[5]);
-                swipingCard.setBalance((short) ((data[7] << 8) | (data[6] & 0xff)));
-
-                int timestamp =
-                        (data[8] & 0xFF) | ((data[9] & 0xFF) << 8) | ((data[10] & 0xFF) << 16) | ((data[11] & 0xFF) << 24);//4字节小端序
-                swipingCard.setTimestamp(timestamp);
-                swipingCard.setCard2Length(data[12]);
-                if (data[12] > 0) {
-                    byte[] bytes = new byte[data[12]];
-                    System.arraycopy(data, 13, bytes, 0, data[12]);
-                    swipingCard.setCard2(bytes);
+                case 0x22: {
+                    Integer number = (int) (System.currentTimeMillis() / 1000);
+                    byte[] byteArray = new byte[4];
+                    byteArray[0] = (byte) (number >> 24);
+                    byteArray[1] = (byte) (number >> 16);
+                    byteArray[2] = (byte) (number >> 8);
+                    byteArray[3] = (byte) (number & 0x000000FF);
+                    ctx.writeAndFlush(msg.getReply(byteArray));
+                    break;
                 }
-                //TODO 根据实际业务回写数据
-//                ctx.writeAndFlush(msg.getReply(new byte[]{0}));
-//                SwipingCardResp swipingCardResp = new SwipingCardResp();
-//                swipingCardResp.setCardId(swipingCard.getCardId());
-//                swipingCardResp.set
-                break;
-            }
-            case 0x03: {
-                SettleConsume settleConsume = new SettleConsume();
-                settleConsume.setChargeTime((short) ((data[1] << 8) | (data[0] & 0xff)));
-                settleConsume.setMaxPower((short) ((data[3] << 8) | (data[2] & 0xff)));
-                settleConsume.setElectric((short) ((data[5] << 8) | (data[4] & 0xff)));
-                settleConsume.setPort(data[6]);
-                settleConsume.setLunchMode(data[7]);
-                settleConsume.setCardId((data[8] & 0xFF) | ((data[9] & 0xFF) << 8) | ((data[10] & 0xFF) << 16) | ((data[11] & 0xFF) << 24));
-                settleConsume.setStopReason(data[12]);
-                byte[] orderId = new byte[16];
-                System.arraycopy(data, 12, orderId, 0, 16);
-                settleConsume.setOrderId(DatatypeConverter.printHexBinary(orderId));
-                settleConsume.setSecondMaxPower((short) ((data[12 + 7] << 8) | (data[12 + 6] & 0xff)));
-                settleConsume.setTimestamp((data[12 + 8] & 0xFF) | ((data[12 + 9] & 0xFF) << 8) | ((data[12 + 10] & 0xFF) << 16) | ((data[12 + 11] & 0xFF) << 24));
-                settleConsume.setOccupiedTime((short) ((data[12 + 13] << 8) | (data[12 + 12] & 0xff)));
-                ctx.writeAndFlush(msg.getReply(new byte[]{0}));
+                case 0x02: {
+                    com.an.idl.consumer.SwipingCard swipingCard = new com.an.idl.consumer.SwipingCard();
+                    swipingCard.setCardId(byteBufData.readInt());
+                    swipingCard.setCardType(byteBufData.readByte());
+                    swipingCard.setPort(byteBufData.readByte());
+                    swipingCard.setBalance(byteBufData.readShortLE());
 
-                OrderAutoFinishChargeDto dto = new OrderAutoFinishChargeDto();
-                dto.setOrderNo(settleConsume.getOrderId());
-                dto.setPileCode(msg.getDeviceCode()+"");
-                dto.setGunCode(settleConsume.getPort()+"");
-                dto.setStartTime(new Date(new Date().getTime()-1*3600*1000));
-                dto.setEndTime(new Date());
+                    swipingCard.setTimestamp(byteBufData.readIntLE());
+                    swipingCard.setCard2Length(byteBufData.readByte());
+                    if (swipingCard.getCard2Length() > 0) {
+                        byte[] bytes = new byte[swipingCard.getCard2Length()];
+                        byteBufData.readBytes(bytes);
+                        swipingCard.setCard2(bytes);
+                    }
+                    SwipingCardResp swipingCardResp = consumerServiceClient.swipingChard(physicalId, swipingCard);
+                    ByteBuf buffer = Unpooled.buffer(11);
+                    buffer.writeIntLE(swipingCard.getCardId());
+                    buffer.writeByte(swipingCard.getCardType());
+                    buffer.writeByte(swipingCardResp.getFeeType());
+                    buffer.writeIntLE(swipingCardResp.getBalanceValidateDate());
+                    buffer.writeByte(swipingCard.getPort());
+                    ctx.writeAndFlush(msg.getReply(buffer.array()));
+                    break;
+                }
+                case 0x03: {
+                    com.an.idl.consumer.SettleConsume settleConsume = new com.an.idl.consumer.SettleConsume();
+                    settleConsume.setChargeTime(byteBufData.readShortLE());
+                    settleConsume.setMaxPower(byteBufData.readShortLE());
+                    settleConsume.setElectric(byteBufData.readShortLE());
+                    settleConsume.setPort(byteBufData.readByte());
+                    settleConsume.setLunchMode(byteBufData.readByte());
+                    settleConsume.setCardId(byteBufData.readInt());
+                    settleConsume.setStopReason(byteBufData.readByte());
+                    byteBufData.skipBytes(8);
+                    settleConsume.setOrderId(byteBufData.readLongLE());
+                    settleConsume.setSecondMaxPower(byteBufData.readShortLE());
+                    if(byteBufData.readableBytes()>=4){
+                        settleConsume.setTimestamp(byteBufData.readIntLE());
+                    }
+                    if(byteBufData.readableBytes()>=2){
+                        settleConsume.setOccupiedTime(byteBufData.readShortLE());
+                    }
+                    ctx.writeAndFlush(msg.getReply(new byte[]{0}));
+
+                    OrderAutoFinishChargeDto dto = new OrderAutoFinishChargeDto();
+                    dto.setOrderNo(settleConsume.getOrderId() + "");
+                    dto.setPileCode(msg.getDeviceCode() + "");
+                    dto.setGunCode(settleConsume.getPort() + "");
+                    dto.setStartTime(new Date(new Date().getTime() - 1 * 3600 * 1000));
+                    dto.setEndTime(new Date());
 
 
-                dto.setElectricityStart("0");
-                dto.setElectricityEnd(""+settleConsume.getElectric());
-                // 总电量
-                dto.setTotalElectricity(new BigDecimal(settleConsume.getElectric()+""));
-                // 计损总电量
-                dto.setLossTotalElectricity(dto.getTotalElectricity());
-                // 消费金额
-                dto.setConsumerAmount(new BigDecimal("3.00"));
-                dto.setStopReason(settleConsume.getStopReason()+"");
-                dto.setStopReasonName(ResponseCode.getStopReasonDescription(settleConsume.getStopReason()));
+                    dto.setElectricityStart("0");
+                    dto.setElectricityEnd("" + settleConsume.getElectric());
+                    // 总电量
+                    dto.setTotalElectricity(new BigDecimal(settleConsume.getElectric() + ""));
+                    // 计损总电量
+                    dto.setLossTotalElectricity(dto.getTotalElectricity());
+                    // 消费金额
+                    dto.setConsumerAmount(new BigDecimal("3.00"));
+                    dto.setStopReason(settleConsume.getStopReason() + "");
+                    dto.setStopReasonName(ResponseCode.getStopReasonDescription(settleConsume.getStopReason()));
 
 //                String key = CacheConstants.PILE_ORDER_SETTLE_DATA + orderNo;
 //                redisCache.setCacheObject(key, dto, 7, TimeUnit.DAYS);
 //
 //                log.info("ykc1.6订单结算:{}", orderNo);
 //                // 通知消费端，订单已结束
-                consumerNet.finishOrder(dto);
-                log.info("data = [{}]", settleConsume);
-                break;
-            }
-            case 0x04: {
-                ChargePortOrderConfirm chargePortOrderConfirm = new ChargePortOrderConfirm();
-                chargePortOrderConfirm.setPort(data[0]);
-                chargePortOrderConfirm.setStatus(data[1]);
-                chargePortOrderConfirm.setCardId(bytes2Int(Arrays.copyOfRange(data, 2, 6)));
-                chargePortOrderConfirm.setChargeTime(byte2ShortValue(Arrays.copyOfRange(data, 7, 7 + 2)));
-                chargePortOrderConfirm.setOrderId(DatatypeConverter.printHexBinary(Arrays.copyOfRange(data, 7, 7 + 16)));
-                ChargePortOrderConfirmResp chargePortOrderConfirmResp = new ChargePortOrderConfirmResp();
-                chargePortOrderConfirmResp.setReplay((byte) 0);
-                chargePortOrderConfirmResp.setPort(chargePortOrderConfirm.getPort());
-                ctx.writeAndFlush(msg.getReply(chargePortOrderConfirmResp.data()));
-                log.info("data = [{}]", chargePortOrderConfirm);
-                break;
-            }
-            case 0x06: {
-                PortChargePowerHeatBeat portChargePowerHeatBeat = new PortChargePowerHeatBeat();
-                ByteBuf byteBuf = Unpooled.buffer(data.length).writeBytes(data);
-                portChargePowerHeatBeat.setPort(byteBuf.readByte());
-                portChargePowerHeatBeat.setPortStatus(byteBuf.readByte());
-                portChargePowerHeatBeat.setChargeTime(byteBuf.readShortLE());
-                portChargePowerHeatBeat.setElectric(byteBuf.readShortLE());
-                portChargePowerHeatBeat.setLunchMode(byteBuf.readByte());
-                portChargePowerHeatBeat.setPower(byteBuf.readShortLE());
-                portChargePowerHeatBeat.setMaxPower(byteBuf.readShortLE());
-                portChargePowerHeatBeat.setMinPower(byteBuf.readShortLE());
-                portChargePowerHeatBeat.setAvgPower(byteBuf.readShortLE());
-                byteBuf.skipBytes(8);
-                portChargePowerHeatBeat.setOrderId(byteBuf.readLongLE()+"");
-                portChargePowerHeatBeat.setTimeElectric(byteBuf.readShortLE());
-                portChargePowerHeatBeat.setPeakPower(byteBuf.readShortLE());
-                portChargePowerHeatBeat.setVoltage(byteBuf.readShortLE());
-                portChargePowerHeatBeat.setElectricity(byteBuf.readShortLE());
-                portChargePowerHeatBeat.setEnvironmentTemperature(byteBuf.readByte());
-                portChargePowerHeatBeat.setPortTemperature(byteBuf.readByte());
-                portChargePowerHeatBeat.setTimestamp(byteBuf.readIntLE());
-                if(byteBuf.readableBytes()>=2){
-                    portChargePowerHeatBeat.setTakeTime(byteBuf.readShortLE());
+                    consumerNet.finishOrder(dto);
+                    consumerServiceClient.settleConsume(physicalId, settleConsume);
+                    log.info("data = [{}]", settleConsume);
+                    break;
                 }
-                log.info("data = [{}]", portChargePowerHeatBeat);
-                break;
-            }
-            case 0x42: {
-                log.info("data = [{}]", data[0]);
-                break;
-            }
-            case 0x43: {
-                ChargeFinish chargeFinish = new ChargeFinish();
-                ByteBuf byteBuf = Unpooled.buffer(data.length).writeBytes(data);
-                chargeFinish.setChargeTime(byteBuf.readShortLE());
-                chargeFinish.setMaxPower(byteBuf.readShortLE());
-                chargeFinish.setElectric(byteBuf.readShortLE());
-                chargeFinish.setPort(byteBuf.readByte());
-                chargeFinish.setLunchMode(byteBuf.readByte());
-                chargeFinish.setCardId(byteBuf.readIntLE());
-                chargeFinish.setStopReason(byteBuf.readByte());
-                chargeFinish.setOrderId(DatatypeConverter.printHexBinary(byteBuf.readBytes(16).array()));
-                log.info("data = [{}]", chargeFinish);
-                break;
-            }
-            case 0x44: {
-                PortStatus portStatus = new PortStatus();
-                ByteBuf byteBuf = Unpooled.buffer(data.length).writeBytes(data);
-                portStatus.setPushType(byteBuf.readByte());
-                portStatus.setPort(byteBuf.readByte());
-                portStatus.setOrderId(DatatypeConverter.printHexBinary(byteBuf.readBytes(16).array()));
-                break;
-            }
+                case 0x04: {
+                    ChargePortOrderConfirm chargePortOrderConfirm = new ChargePortOrderConfirm();
+                    chargePortOrderConfirm.setPort(byteBufData.readByte());
+                    chargePortOrderConfirm.setStatus(byteBufData.readByte());
+                    chargePortOrderConfirm.setCardId(byteBufData.readInt());
+                    chargePortOrderConfirm.setChargeTime(byteBufData.readShortLE());
+                    byteBufData.skipBytes(8);
+                    chargePortOrderConfirm.setOrderId(byteBufData.readLongLE() + "");
+                    log.info("data = [{}]", chargePortOrderConfirm);
+                    ctx.writeAndFlush(msg.getReply(new byte[]{chargePortOrderConfirm.getPort(), 0}));
+                    break;
+                }
+                case 0x06: {
+                    PortChargePowerHeatBeat portChargePowerHeatBeat = new PortChargePowerHeatBeat();
+                    portChargePowerHeatBeat.setPort(byteBufData.readByte());
+                    portChargePowerHeatBeat.setPortStatus(byteBufData.readByte());
+                    portChargePowerHeatBeat.setChargeTime(byteBufData.readShortLE());
+                    portChargePowerHeatBeat.setElectric(byteBufData.readShortLE());
+                    portChargePowerHeatBeat.setLunchMode(byteBufData.readByte());
+                    portChargePowerHeatBeat.setPower(byteBufData.readShortLE());
+                    portChargePowerHeatBeat.setMaxPower(byteBufData.readShortLE());
+                    portChargePowerHeatBeat.setMinPower(byteBufData.readShortLE());
+                    portChargePowerHeatBeat.setAvgPower(byteBufData.readShortLE());
+                    byteBufData.skipBytes(8);
+                    portChargePowerHeatBeat.setOrderId(byteBufData.readLongLE() + "");
+                    portChargePowerHeatBeat.setTimeElectric(byteBufData.readShortLE());
+                    portChargePowerHeatBeat.setPeakPower(byteBufData.readShortLE());
+                    portChargePowerHeatBeat.setVoltage(byteBufData.readShortLE());
+                    portChargePowerHeatBeat.setElectricity(byteBufData.readShortLE());
+                    portChargePowerHeatBeat.setEnvironmentTemperature(byteBufData.readByte());
+                    portChargePowerHeatBeat.setPortTemperature(byteBufData.readByte());
+                    portChargePowerHeatBeat.setTimestamp(byteBufData.readIntLE());
+                    if (byteBufData.readableBytes() >= 2) {
+                        portChargePowerHeatBeat.setTakeTime(byteBufData.readShortLE());
+                    }
+                    log.info("data = [{}]", portChargePowerHeatBeat);
+                    break;
+                }
+                case 0x42: {
+                    log.info("data = [{}] {}", byteBufData.readByte(), byteBufData.readByte());
+                    break;
+                }
+                case 0x43: {
+                    ChargeFinish chargeFinish = new ChargeFinish();
+                    chargeFinish.setChargeTime(byteBufData.readShortLE());
+                    chargeFinish.setMaxPower(byteBufData.readShortLE());
+                    chargeFinish.setElectric(byteBufData.readShortLE());
+                    chargeFinish.setPort(byteBufData.readByte());
+                    chargeFinish.setLunchMode(byteBufData.readByte());
+                    chargeFinish.setCardId(byteBufData.readIntLE());
+                    chargeFinish.setStopReason(byteBufData.readByte());
+                    byteBufData.skipBytes(8);
+                    chargeFinish.setOrderId(byteBufData.readLongLE() + "");
+                    log.info("data = [{}]", chargeFinish);
+                    break;
+                }
+                case 0x44: {
+                    PortStatus portStatus = new PortStatus();
+                    portStatus.setPushType(byteBufData.readByte());
+                    portStatus.setPort(byteBufData.readByte());
+                    byteBufData.skipBytes(8);
+                    portStatus.setOrderId(byteBufData.readLongLE() + "");
+                    break;
+                }
 
-            //0x82= 无符号的130，补码为-126
-            case -126:{
-                ByteBuf byteBuf = Unpooled.copiedBuffer(data);
-                byte response = byteBuf.readByte();
-                byteBuf.skipBytes(8);
-                long orderNo = byteBuf.readLongLE();
-                byte port = byteBuf.readByte();
-                byte waitPort = byteBuf.readByte();
-                log.info("0x82 :response:[{}] orderNo:[{}] port:[{}] waitPort:[{}]",response,orderNo,port,waitPort );
-                break;
-            }
-            default:{
-                log.debug("unknown command [{}]",msg);
-            }
+                //0x82= 无符号的130，补码为-126
+                case -126: {
+                    byte response = byteBufData.readByte();
+                    byteBufData.skipBytes(8);
+                    long orderNo = byteBufData.readLongLE();
+                    byte port = byteBufData.readByte();
+                    byte waitPort = byteBufData.readByte();
+                    log.info("0x82 :response:[{}] orderNo:[{}] port:[{}] waitPort:[{}]", response, orderNo, port, waitPort);
+                    break;
+                }
+                default: {
+                    log.debug("unknown command [{}]", msg);
+                }
 
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        } finally {
+            ReferenceCountUtil.release(byteBufData);
         }
-
-//            AbstractService service = MessageDispatcher.getService(command);
-//            byte[] bytes = service.onReceive(data);
-//            ctx.writeAndFlush(msg.getReply(bytes));
     }
 
     @Override
@@ -298,50 +320,4 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
         log.error("exceptionCaught:ctx = [{}], cause = [{}]", ctx, cause);
         ctx.close();
     }
-
-    /**
-     * 将字节数组按小端序每两个字节解析成一个short类型的值
-     *
-     * @param data
-     * @return
-     */
-    private short[] byte2shortLE(byte[] data) {
-        if (data.length % 2 != 0) {
-            throw new IllegalArgumentException("array length must be even number!");
-        }
-        short[] shorts = new short[data.length / 2];
-        for (int i = 0; i < shorts.length; i++) {
-            shorts[i] = ((short) ((data[i * 2 + 1] << 8) | (data[i * 2] & 0xff)));
-        }
-        return shorts;
-    }
-
-    private short byte2ShortValue(byte[] data) {
-        if (data == null || data.length != 2) {
-            throw new IllegalArgumentException("array length must be 2");
-        }
-        return (short) ((data[1] << 8) | (data[0] & 0xff));
-    }
-
-    /**
-     * 4字节大端序转int
-     *
-     * @param data
-     * @return
-     */
-    private int bytes2Int(byte[] data) {
-        if (data == null || data.length != 4) {
-            throw new IllegalArgumentException("byte array length must be 4");
-        }
-        return ((data[0] & 0xFF) << 24) | ((data[1] & 0xFF) << 16) | ((data[2] & 0xFF) << 8) | (data[3] & 0xFF);//4字节大端序
-    }
-
-    private int bytes2IntLE(byte[] data) {
-        if (data == null || data.length != 4) {
-            throw new IllegalArgumentException("byte array length must be 4");
-        }
-        return (data[0] & 0xFF) | ((data[1] & 0xFF) << 8) | ((data[2] & 0xFF) << 16) | ((data[3] & 0xFF) << 24);//4字节小端序
-    }
-
-
 }

@@ -1,5 +1,6 @@
-package com.an.idl;
+package com.an.idl.server;
 
+import com.an.idl.ap3000.*;
 import com.an.net.GlobalContext;
 import com.an.net.UDianPackage;
 import io.netty.buffer.ByteBuf;
@@ -35,7 +36,7 @@ public class AP3000ServiceImpl implements AP3000Service.Iface {
         toWrite.writeByte(p.getChargeCommand());
         toWrite.writeShortLE(p.getChargeTimeElectric());
         toWrite.writeLongLE(0L);
-        toWrite.writeLongLE(Long.parseLong(new String(p.getOrderNo())));
+        toWrite.writeLongLE(p.getOrderNo());
         toWrite.writeShortLE(p.getMaxChargeTime());
         toWrite.writeShortLE(p.getMaxChargePower());
         toWrite.writeByte(p.getQRCodeLight());
@@ -366,9 +367,9 @@ public class AP3000ServiceImpl implements AP3000Service.Iface {
     public StopChargeResp stopCharge(int physicalId, StopCharge p) throws TException {
         ByteBuf toWrite = Unpooled.buffer(17);
         toWrite.writeByte(p.getPort());
-        toWrite.writeBytes(p.getOrderNo());
+        toWrite.writeLongLE(0L);
+        toWrite.writeLongLE(p.getOrderNo());
         UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0x72, toWrite.array());
-
         UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
         StopChargeResp stopChargeResp = new StopChargeResp();
 

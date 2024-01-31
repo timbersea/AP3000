@@ -74,7 +74,7 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
        try {
            byte[] toCalCheck = new byte[decoded.readableBytes() - 2];//去掉最后两字节的检校值后的数据参与计算校验值
            decoded.getBytes(0, toCalCheck, 0, toCalCheck.length);
-           decoded.readBytes(3);
+           decoded.skipBytes(3);
            int length = decoded.readUnsignedShortLE();
            int physicalId = decoded.readIntLE();
            int messageId = decoded.readUnsignedShortLE();
@@ -82,7 +82,6 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
             data = decoded.readBytes(length - 4 - 2 - 1 - 2);
             data.retain();
            int check = decoded.readUnsignedShortLE();
-
 
            UDianPackage uDianPackage = new UDianPackage();
            uDianPackage.setDny("DNY");
@@ -107,7 +106,6 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
            ReferenceCountUtil.release(decoded);
            if(data!=null){
                ReferenceCountUtil.release(data);
-
            }
        }
     }
@@ -130,7 +128,6 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
         out.writeBytes(uDianPackage.getData());
         byte[] toCalCheck = new byte[out.readableBytes()];
         out.readBytes(toCalCheck);
-        ReferenceCountUtil.release(out);
         return calCheck(toCalCheck);
     }
 
