@@ -43,7 +43,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
         GlobalContext.completeResponse(msg.getMessageId(), msg);
 
         int command = msg.getCommand();
-         byte[] data = msg.getData();
+        byte[] data = msg.getData();
         ByteBuf byteBufData = Unpooled.buffer(data.length);
         byteBufData.writeBytes(data);
         // MessageDispatcher.getService(command);
@@ -167,10 +167,10 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     byteBufData.skipBytes(8);
                     settleConsume.setOrderId(byteBufData.readLongLE());
                     settleConsume.setSecondMaxPower(byteBufData.readShortLE());
-                    if(byteBufData.readableBytes()>=4){
+                    if (byteBufData.readableBytes() >= 4) {
                         settleConsume.setTimestamp(byteBufData.readIntLE());
                     }
-                    if(byteBufData.readableBytes()>=2){
+                    if (byteBufData.readableBytes() >= 2) {
                         settleConsume.setOccupiedTime(byteBufData.readShortLE());
                     }
                     ctx.writeAndFlush(msg.getReply(new byte[]{0}));
@@ -199,8 +199,9 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
 //
 //                log.info("ykc1.6订单结算:{}", orderNo);
 //                // 通知消费端，订单已结束
-                    consumerNet.finishOrder(dto);
+                    //   consumerNet.finishOrder(dto);
                     consumerServiceClient.settleConsume(physicalId, settleConsume);
+                    ctx.writeAndFlush(msg.getReply(new byte[0]));
                     log.info("data = [{}]", settleConsume);
                     break;
                 }

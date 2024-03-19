@@ -129,8 +129,6 @@ public class AP3000CodecTest {
     @Test
     public void test1(){
         String hexString = "444E5913003B37AB04B900207E00021421000000E4009104";
-        EmbeddedChannel channel = new EmbeddedChannel(new LoggingHandler(LogLevel.DEBUG),new AP3000Codec(),
-                new MessageHandler());
         UDianPackage msg = UDianPackage.buildFromHexString(hexString);
         ByteBuf out = Unpooled.buffer();
         out.writeBytes(msg.getDny().getBytes(StandardCharsets.UTF_8));
