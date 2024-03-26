@@ -35,11 +35,12 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, UDianPackage msg) throws Exception {
         if (log.isDebugEnabled()) {
-            log.debug("physicalId: = [{}], msg = [{}]", ctx.channel().attr(GlobalContext.physicalIdAttr).get(), msg);
+            log.debug("pileCode: = [{}], msg = [{}]", ctx.channel().attr(GlobalContext.pileCodeAttr).get(), msg);
         }
-        int physicalId = msg.getPhysicalId();
-        ctx.channel().attr(GlobalContext.physicalIdAttr).setIfAbsent(physicalId);
-        GlobalContext.online(physicalId, ctx);
+        int pileCode = msg.physicalId2PileCode();
+        ctx.channel().attr(GlobalContext.pileCodeAttr).setIfAbsent(pileCode);
+        ctx.channel().attr(GlobalContext.deviceTypeAttr).setIfAbsent(msg.physicalId2Type());
+        GlobalContext.online(pileCode, ctx);
         GlobalContext.completeResponse(msg.getMessageId(), msg);
 
         int command = msg.getCommand();
@@ -81,8 +82,8 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
 
                     ctx.writeAndFlush(msg.getReply(new byte[]{0}));
                     log.info(" data = [{}]", heatBeat);
-                    log.info(("deviceType :[{}] deviceCode[{}]"), msg.getDeviceType(), msg.getDeviceCode());
-                    consumerServiceClient.heatBeat(physicalId, heatBeat);
+                    log.info(("deviceType :[{}] pileCode[{}]"), msg.getDeviceType(), msg.getPileCode());
+                    consumerServiceClient.heatBeat(pileCode, heatBeat);
                     break;
                 }
                 case 0x20: {
@@ -95,7 +96,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     if (byteBufData.readableBytes() >= 2) {
                         register.setPowerVersion(byteBufData.readShortLE());
                     }
-                    consumerServiceClient.register(physicalId, register);
+                    consumerServiceClient.register(pileCode, register);
 
                     ctx.writeAndFlush(msg.getReply(new byte[]{0}));
 
@@ -116,7 +117,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     heatBeat21.setSignalStrength(byteBufData.readByte());
                     heatBeat21.setEnvironmentTemperature(byteBufData.readByte());
 
-                    consumerServiceClient.heatBeat21(physicalId, heatBeat21);
+                    consumerServiceClient.heatBeat21(pileCode, heatBeat21);
                     ctx.writeAndFlush(msg.getReply(new byte[]{0}));
                     log.info(" data = [{}]", heatBeat21);
                     break;
@@ -145,7 +146,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                         byteBufData.readBytes(bytes);
                         swipingCard.setCard2(bytes);
                     }
-                    SwipingCardResp swipingCardResp = consumerServiceClient.swipingChard(physicalId, swipingCard);
+                    SwipingCardResp swipingCardResp = consumerServiceClient.swipingChard(pileCode, swipingCard);
                     ByteBuf buffer = Unpooled.buffer(11);
                     buffer.writeIntLE(swipingCard.getCardId());
                     buffer.writeByte(swipingCard.getCardType());
@@ -177,7 +178,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
 
                     OrderAutoFinishChargeDto dto = new OrderAutoFinishChargeDto();
                     dto.setOrderNo(settleConsume.getOrderId() + "");
-                    dto.setPileCode(msg.getDeviceCode() + "");
+                    dto.setPileCode(msg.getPileCode() + "");
                     dto.setGunCode(settleConsume.getPort() + "");
                     dto.setStartTime(new Date(new Date().getTime() - 1 * 3600 * 1000));
                     dto.setEndTime(new Date());
@@ -200,7 +201,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
 //                log.info("ykc1.6订单结算:{}", orderNo);
 //                // 通知消费端，订单已结束
                     //   consumerNet.finishOrder(dto);
-                    consumerServiceClient.settleConsume(physicalId, settleConsume);
+                    consumerServiceClient.settleConsume(pileCode, settleConsume);
                     ctx.writeAndFlush(msg.getReply(new byte[0]));
                     log.info("data = [{}]", settleConsume);
                     break;

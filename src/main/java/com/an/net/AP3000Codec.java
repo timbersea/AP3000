@@ -58,8 +58,8 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
                 String link = DatatypeConverter.printHexBinary(linkByte);
                 if ("6C696E6B".equals(link)) {
                     if(log.isDebugEnabled()){
-                        log.debug("physicalId = [{}],read link [{}]",
-                                channelHandlerContext.channel().attr(GlobalContext.physicalIdAttr), link);
+                        log.debug("pileCode = [{}],read link [{}]",
+                                channelHandlerContext.channel().attr(GlobalContext.pileCodeAttr), link);
                     }
                     byteBuf.skipBytes(4);
                 }

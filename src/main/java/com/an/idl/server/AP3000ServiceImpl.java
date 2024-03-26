@@ -17,18 +17,18 @@ public class AP3000ServiceImpl implements AP3000Service.Iface {
     private static final Logger log = LoggerFactory.getLogger(AP3000ServiceImpl.class);
 
     @Override
-    public ByteBuffer send(int physicalId, ByteBuffer data) throws TException {
+    public ByteBuffer send(int pileCode, ByteBuffer data) throws TException {
         return null;
     }
 
     @Override
-    public void syncDeviceStatus(int physicalId, byte command) throws TException {
-        UDianPackage uDianPackage = new UDianPackage(physicalId, command, new byte[0]);
-        GlobalContext.asyncWriteData(physicalId, uDianPackage);
+    public void syncDeviceStatus(int pileCode, byte command) throws TException {
+        UDianPackage uDianPackage = new UDianPackage(pileCode, command, new byte[0]);
+        GlobalContext.asyncWriteData(pileCode, uDianPackage);
     }
 
     @Override
-    public StartChargeResp startChargeCommand(int physicalId, StartCharge p) throws TException {
+    public StartChargeResp startChargeCommand(int pileCode, StartCharge p) throws TException {
         ByteBuf toWrite = Unpooled.buffer(35);
         toWrite.writeByte(p.getFeeType());
         toWrite.writeIntLE(p.getBalanceValidateDate());
@@ -47,10 +47,10 @@ public class AP3000ServiceImpl implements AP3000Service.Iface {
         toWrite.writeByte(p.getFullAutoStop());
         toWrite.writeByte(p.getFullChargePower());
         toWrite.writeByte(p.getFullChargePowerMaxJudgeTime());
-        UDianPackage toSend = new UDianPackage(physicalId, (byte) 0x82, toWrite.array());
+        UDianPackage toSend = new UDianPackage(pileCode, (byte) 0x82, toWrite.array());
 
 
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, toSend);
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, toSend);
         byte[] data = response.getData();
         ByteBuf buffer = Unpooled.buffer(data.length);
         buffer.writeBytes(data);
@@ -65,21 +65,21 @@ public class AP3000ServiceImpl implements AP3000Service.Iface {
     }
 
     @Override
-    public byte modifyChargePara(int physicalId, ModifyChargeParam p) throws TException {
+    public byte modifyChargePara(int pileCode, ModifyChargeParam p) throws TException {
         ByteBuf toWrite = Unpooled.buffer(4);
         toWrite.writeByte(p.getFeeType());
         toWrite.writeByte(p.getPort());
         toWrite.writeShortLE(p.getChargeTimeEnerge());
-        UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0x8A, toWrite.array());
+        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x8A, toWrite.array());
 
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
 
         byte[] data = response.getData();
         return data[0];
     }
 
     @Override
-    public byte powerSettings1(int physicalId, PowerSettings1 p) throws TException {
+    public byte powerSettings1(int pileCode, PowerSettings1 p) throws TException {
         ByteBuf toWrite = Unpooled.buffer(11);
         toWrite.writeShortLE(p.getPullOutPower());
         toWrite.writeShortLE(p.getPullOutPowerRecognitionTime());
@@ -87,14 +87,14 @@ public class AP3000ServiceImpl implements AP3000Service.Iface {
         toWrite.writeShortLE(p.getFloatChargeStatusRecognitionTime());
         toWrite.writeShortLE(p.getFloatChargeTime());
         toWrite.writeShortLE(p.getHeartbeatReportingInterval());
-        UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0x83, toWrite.array());
+        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x83, toWrite.array());
 
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
         return response.getData()[0];
     }
 
     @Override
-    public byte powerSettings2(int physicalId, PowerSettings2 p) throws TException {
+    public byte powerSettings2(int pileCode, PowerSettings2 p) throws TException {
         ByteBuf toWrite = Unpooled.buffer(23);
         toWrite.writeShortLE(p.getDynamicOverloadPower());
         toWrite.writeShortLE(p.getDynamicOverloadRecognitionTime());
@@ -111,51 +111,51 @@ public class AP3000ServiceImpl implements AP3000Service.Iface {
         toWrite.writeByte(p.getOpenCloseDetectionUserPullOut());
         toWrite.writeByte(p.getQrCodeLight());
 
-        UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0x84, toWrite.array());
+        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x84, toWrite.array());
 
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
         return response.getData()[0];
     }
 
     @Override
-    public byte setMaxChargeTimePower(int physicalId, MaxTimePower p) throws TException {
+    public byte setMaxChargeTimePower(int pileCode, MaxTimePower p) throws TException {
         ByteBuf toWrite = Unpooled.buffer(4);
         toWrite.writeShortLE(p.getMaxChargeTime());
         toWrite.writeShortLE(p.getMaxChargePower());
-        UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0x85, toWrite.array());
+        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x85, toWrite.array());
 
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
         return response.getData()[0];
     }
 
     @Override
-    public byte setUserCard(int physicalId, UserCard p) throws TException {
+    public byte setUserCard(int pileCode, UserCard p) throws TException {
         ByteBuf toWrite = Unpooled.buffer(4);
         toWrite.writeByte(p.getUserSector());
         toWrite.writeBytes(p.getUesrCardPassword());
         toWrite.writeBytes(p.getNewCardPassword());
-        UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0x86, toWrite.array());
+        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x86, toWrite.array());
 
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
         return response.getData()[0];
     }
 
     @Override
-    public byte resetAndRestart(int physicalId) throws TException {
-        UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0x87, new byte[0]);
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
+    public byte resetAndRestart(int pileCode) throws TException {
+        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x87, new byte[0]);
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
         return response.getData()[0];
     }
 
     @Override
-    public byte romClean(int physicalId) throws TException {
-        UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0x88, new byte[0]);
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
+    public byte romClean(int pileCode) throws TException {
+        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x88, new byte[0]);
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
         return response.getData()[0];
     }
 
     @Override
-    public byte playVoice(int physicalId, Voice p) throws TException {
+    public byte playVoice(int pileCode, Voice p) throws TException {
         ByteBuf toWrite = Unpooled.buffer();
         toWrite.writeByte(p.getBreak());
         toWrite.writeByte(p.getVoiceLength());
@@ -163,26 +163,26 @@ public class AP3000ServiceImpl implements AP3000Service.Iface {
         byte[] bytes = new byte[toWrite.readableBytes()];
         toWrite.readBytes(bytes);
 
-        UDianPackage response = new UDianPackage(physicalId, (byte) 0x89, bytes);
+        UDianPackage response = new UDianPackage(pileCode, (byte) 0x89, bytes);
         return response.getData()[0];
     }
 
     @Override
-    public byte setDeviceWorkMode(int physicalId, byte p) throws TException {
-        UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0x8D, new byte[0]);
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
+    public byte setDeviceWorkMode(int pileCode, byte p) throws TException {
+        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x8D, new byte[0]);
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
         return response.getData()[0];
     }
 
     @Override
-    public FirmwareUpdateResp deviceUpdatePackage(int physicalId, FirmwareUpdate p) throws TException {
+    public FirmwareUpdateResp deviceUpdatePackage(int pileCode, FirmwareUpdate p) throws TException {
         ByteBuf toWrite = Unpooled.buffer(4);
         toWrite.writeShortLE(p.getTotalPackage());
         toWrite.writeShortLE(p.getCurrentPackage());
         toWrite.writeBytes(p.getFirmware());
-        UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0xE1, toWrite.array());
+        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0xE1, toWrite.array());
 
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
         FirmwareUpdateResp firmwareUpdateResp = new FirmwareUpdateResp();
 
         ByteBuf buffer = Unpooled.buffer(3);
@@ -194,14 +194,14 @@ public class AP3000ServiceImpl implements AP3000Service.Iface {
     }
 
     @Override
-    public FirmwareUpdateResp deviceUpdatePackageF8(int physicalId, FirmwareUpdateF8 p) throws TException {
+    public FirmwareUpdateResp deviceUpdatePackageF8(int pileCode, FirmwareUpdateF8 p) throws TException {
         ByteBuf toWrite = Unpooled.buffer(4);
         toWrite.writeShortLE(p.getTotalPackage());
         toWrite.writeShortLE(p.getCurrentPackage());
         toWrite.writeBytes(p.getFirmware());
-        UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0xE1, toWrite.array());
+        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0xE1, toWrite.array());
 
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
         FirmwareUpdateResp firmwareUpdateResp = new FirmwareUpdateResp();
 
         ByteBuf buffer = Unpooled.buffer(3);
@@ -213,10 +213,10 @@ public class AP3000ServiceImpl implements AP3000Service.Iface {
     }
 
     @Override
-    public PowerSettings1 query90(int physicalId) throws TException {
+    public PowerSettings1 query90(int pileCode) throws TException {
 
-        UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0x90, new byte[0]);
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
+        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x90, new byte[0]);
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
 
         PowerSettings1 powerSettings1 = new PowerSettings1();
         ByteBuf buffer = Unpooled.buffer(response.getData().length);
@@ -230,11 +230,11 @@ public class AP3000ServiceImpl implements AP3000Service.Iface {
     }
 
     @Override
-    public PowerSettings2 query91(int physicalId) throws TException {
+    public PowerSettings2 query91(int pileCode) throws TException {
 
 
-        UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0x91, new byte[0]);
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
+        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x91, new byte[0]);
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
         ByteBuf byteBuf = Unpooled.copiedBuffer(response.getData());
 
         PowerSettings2 powerSettings2 = new PowerSettings2();
@@ -258,11 +258,11 @@ public class AP3000ServiceImpl implements AP3000Service.Iface {
     }
 
     @Override
-    public PowerSettings2 query92(int physicalId) throws TException {
+    public PowerSettings2 query92(int pileCode) throws TException {
 
 
-        UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0x92, new byte[0]);
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
+        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x92, new byte[0]);
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
         ByteBuf byteBuf = Unpooled.copiedBuffer(response.getData());
 
         PowerSettings2 powerSettings2 = new PowerSettings2();
@@ -286,11 +286,11 @@ public class AP3000ServiceImpl implements AP3000Service.Iface {
     }
 
     @Override
-    public UserCard query93(int physicalId) throws TException {
+    public UserCard query93(int pileCode) throws TException {
 
 
-        UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0x93, new byte[0]);
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
+        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x93, new byte[0]);
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
         ByteBuf byteBuf = Unpooled.copiedBuffer(response.getData());
         UserCard userCard = new UserCard();
         userCard.setUserSector(byteBuf.readByte());
@@ -301,20 +301,20 @@ public class AP3000ServiceImpl implements AP3000Service.Iface {
 
     @Deprecated
     @Override
-    public MaxTimePower query94(int physicalId) throws TException {
+    public MaxTimePower query94(int pileCode) throws TException {
         return null;
     }
 
     @Override
-    public ReadEEPROMResp readEEPROM(int physicalId, ReadEEPROM p) throws TException {
+    public ReadEEPROMResp readEEPROM(int pileCode, ReadEEPROM p) throws TException {
 
         ByteBuf toWrite = Unpooled.buffer();
         toWrite.writeShortLE(p.getEEPROM());
         toWrite.writeByte(p.getDatalength());
         byte[] bytes = new byte[toWrite.readableBytes()];
 
-        UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0x8B, bytes);
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
+        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x8B, bytes);
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
 
         ReadEEPROMResp readEEPROMResp = new ReadEEPROMResp();
         readEEPROMResp.setIsSuccess(response.getData()[0]);
@@ -325,7 +325,7 @@ public class AP3000ServiceImpl implements AP3000Service.Iface {
     }
 
     @Override
-    public byte writeEEPROM(int physicalId, WriteEEPROM p) throws TException {
+    public byte writeEEPROM(int pileCode, WriteEEPROM p) throws TException {
 
 
         ByteBuf toWrite = Unpooled.buffer();
@@ -333,44 +333,44 @@ public class AP3000ServiceImpl implements AP3000Service.Iface {
         toWrite.writeByte(p.getDatalength());
         toWrite.writeBytes(p.getEEPROMDATA());
 
-        UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0x8C, toWrite.array());
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
+        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x8C, toWrite.array());
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
 
         return response.getData()[0];
     }
 
     @Override
-    public byte modifyQRCode(int physicalId, QRCode p) throws TException {
+    public byte modifyQRCode(int pileCode, QRCode p) throws TException {
 
         ByteBuf toWrite = Unpooled.buffer();
         toWrite.writeByte(p.getMainType());
         toWrite.writeBytes(p.getReserveVaule());
         toWrite.writeBytes(p.getQRCode());
 
-        UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0x8E, toWrite.array());
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
+        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x8E, toWrite.array());
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
 
         return response.getData()[0];
     }
 
     @Override
-    public byte setTCMode(int physicalId, byte mode) throws TException {
+    public byte setTCMode(int pileCode, byte mode) throws TException {
         byte[] bytes = new byte[1];
         bytes[0] = mode;
-        UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0x8F, bytes);
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
+        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x8F, bytes);
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
 
         return response.getData()[0];
     }
 
     @Override
-    public StopChargeResp stopCharge(int physicalId, StopCharge p) throws TException {
+    public StopChargeResp stopCharge(int pileCode, StopCharge p) throws TException {
         ByteBuf toWrite = Unpooled.buffer(17);
         toWrite.writeByte(p.getPort());
         toWrite.writeLongLE(0L);
         toWrite.writeLongLE(p.getOrderNo());
-        UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0x72, toWrite.array());
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
+        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x72, toWrite.array());
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
         StopChargeResp stopChargeResp = new StopChargeResp();
 
         ByteBuf byteBuf = Unpooled.copiedBuffer(response.getData());
@@ -380,51 +380,51 @@ public class AP3000ServiceImpl implements AP3000Service.Iface {
     }
 
     @Override
-    public byte temporaryQRCode(int physicalId, ByteBuffer p) throws TException {
-        UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0x95, p.array());
+    public byte temporaryQRCode(int pileCode, ByteBuffer p) throws TException {
+        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x95, p.array());
 
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
-        return  response.getData()[0];
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        return response.getData()[0];
     }
 
     @Override
-    public byte searchDevice(int physicalId, byte p) throws TException {
+    public byte searchDevice(int pileCode, byte p) throws TException {
         byte[] bytes = new byte[1];
-        bytes[0]=p;
-        UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0x96, bytes);
+        bytes[0] = p;
+        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x96, bytes);
 
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
-        return  response.getData()[0];
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        return response.getData()[0];
     }
 
     @Override
-    public byte mute(int physicalId, byte p) throws TException {
+    public byte mute(int pileCode, byte p) throws TException {
         byte[] bytes = new byte[1];
-        bytes[0]=p;
-        UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0x97, bytes);
+        bytes[0] = p;
+        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x97, bytes);
 
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
-        return  response.getData()[0];
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        return response.getData()[0];
     }
 
     @Override
-    public byte mutiFunction(int physicalId, MutiFunction p) throws TException {
+    public byte mutiFunction(int pileCode, MutiFunction p) throws TException {
         byte[] bytes = new byte[2];
-        bytes[0]=p.getFunction();
-        bytes[1]=p.getPort();
-        UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0x98, bytes);
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
-        return  response.getData()[0];
+        bytes[0] = p.getFunction();
+        bytes[1] = p.getPort();
+        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x98, bytes);
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        return response.getData()[0];
     }
 
     @Override
-    public byte reserveComman(int physicalId, Reserve p) throws TException {
+    public byte reserveComman(int pileCode, Reserve p) throws TException {
         ByteBuf buffer = Unpooled.buffer(12);
         buffer.writeInt(p.R1);
         buffer.writeInt(p.R2);
         buffer.writeInt(p.R3);
-        UDianPackage uDianPackage = new UDianPackage(physicalId, (byte) 0xFE, buffer.array());
-        UDianPackage response = GlobalContext.requestAndResponse(physicalId, uDianPackage);
-        return  response.getData()[0];
+        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0xFE, buffer.array());
+        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        return response.getData()[0];
     }
 }

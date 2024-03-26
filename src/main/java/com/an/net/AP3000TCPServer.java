@@ -23,6 +23,7 @@ public class AP3000TCPServer implements CommandLineRunner {
     private static final Logger log = LoggerFactory.getLogger(AP3000TCPServer.class);
     EventLoopGroup bossGroup = new NioEventLoopGroup(); // (1)
     EventLoopGroup workerGroup = new NioEventLoopGroup();
+    EventLoopGroup serviceGroup = new NioEventLoopGroup();
 
     @Resource
     MessageHandler messageHandler;
@@ -37,7 +38,7 @@ public class AP3000TCPServer implements CommandLineRunner {
                     @Override
                     public void initChannel(SocketChannel ch) throws Exception {
                         ch.pipeline().addLast(new LoggingHandler(LogLevel.DEBUG)).addLast(new AP3000Codec())
-                                .addLast(messageHandler);
+                                .addLast(serviceGroup,messageHandler);
 
                     }
                 })

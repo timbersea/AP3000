@@ -9,11 +9,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class UDianPackage {
-    private static final AtomicInteger seq=new  AtomicInteger();
+    private static final AtomicInteger seq = new AtomicInteger();
 
     private String dny = "DNY";
     private short length;
-    private int physicalId;
+    private Integer physicalId;
+    private int pileCode;
     private short messageId;
     private int command;//协议中实际占一个字节
 
@@ -30,11 +31,12 @@ public class UDianPackage {
     }
 
     public byte getDeviceType() {
-        return (byte) (physicalId >> 24);
+        return (byte) (physicalId & 0xFF);
+
     }
 
-    public int getDeviceCode() {
-        return physicalId & 0x00FFFFFF;
+    public int getPileCode() {
+        return physicalId2PileCode();
     }
 
     public String getDny() {
@@ -53,7 +55,7 @@ public class UDianPackage {
         this.length = length;
     }
 
-    public int getPhysicalId() {
+    public Integer getPhysicalId() {
         return physicalId;
     }
 
@@ -94,7 +96,7 @@ public class UDianPackage {
         return "YouDianPackage{" +
                 "dny='" + dny + '\'' +
                 ", length=" + length +
-                ", physicalId=" + physicalId +
+                ", physicalId=" + physicalId2PileCode() +
                 ", messageId=" + messageId +
                 ", command=" + command +
                 ", data=" + DatatypeConverter.printHexBinary(data) +
@@ -120,9 +122,10 @@ public class UDianPackage {
 
     public UDianPackage() {
     }
-    public UDianPackage(int physicalId,byte command,byte []data ){
-        this.dny="DNY";
-        this.physicalId = physicalId;
+
+    public UDianPackage(int pileCode, byte command, byte[] data) {
+        this.dny = "DNY";
+        this.pileCode = pileCode;
         this.setMessageId(generateMessageId());
         this.setCommand(command);
         this.setData(data);
@@ -147,7 +150,20 @@ public class UDianPackage {
         return AP3000Codec.getYouDianPackage(buffer);
     }
 
-    public static short generateMessageId(){
-        return (short) (seq.getAndDecrement()&0x07FFF);
+    public static short generateMessageId() {
+        return (short) (seq.getAndIncrement() & 0x07FFF);
+    }
+
+    /**
+     * physicalId映射成业务系统中的pileCode,因为设备传上的四个字节是由 deviceType的识别码和设备编号组成的，
+     * 所以需要做额外的解析
+     * @return
+     */
+    public  final int physicalId2PileCode() {
+        int pileCode = physicalId & 0x00FFFFFF;
+        return pileCode;
+    }
+    public  final byte physicalId2Type(){
+        return (byte) ((physicalId&0xFF000000)>>24);
     }
 }
