@@ -21,6 +21,9 @@ import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
+
+import static com.an.net.GlobalContext.pileCodeAttr;
 
 @Component
 @ChannelHandler.Sharable
@@ -34,11 +37,8 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, UDianPackage msg) throws Exception {
-        if (log.isDebugEnabled()) {
-            log.debug("pileCode: = [{}], msg = [{}]", ctx.channel().attr(GlobalContext.pileCodeAttr).get(), msg);
-        }
         int pileCode = msg.physicalId2PileCode();
-        ctx.channel().attr(GlobalContext.pileCodeAttr).setIfAbsent(pileCode);
+        ctx.channel().attr(pileCodeAttr).setIfAbsent(pileCode);
         ctx.channel().attr(GlobalContext.deviceTypeAttr).setIfAbsent(msg.physicalId2Type());
         GlobalContext.online(pileCode, ctx);
         GlobalContext.completeResponse(msg.getMessageId(), msg);
@@ -96,11 +96,11 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     if (byteBufData.readableBytes() >= 2) {
                         register.setPowerVersion(byteBufData.readShortLE());
                     }
-                    consumerServiceClient.register(pileCode, register);
-
-                    ctx.writeAndFlush(msg.getReply(new byte[]{0}));
 
                     log.info(" data = [{}]", register);
+                    ctx.writeAndFlush(msg.getReply(new byte[]{0}));
+                    consumerServiceClient.register(pileCode, register);
+
                     break;
                 }
                 case 0x21: {
@@ -117,9 +117,9 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     heatBeat21.setSignalStrength(byteBufData.readByte());
                     heatBeat21.setEnvironmentTemperature(byteBufData.readByte());
 
-                    consumerServiceClient.heatBeat21(pileCode, heatBeat21);
-                    ctx.writeAndFlush(msg.getReply(new byte[]{0}));
                     log.info(" data = [{}]", heatBeat21);
+                    ctx.writeAndFlush(msg.getReply(new byte[]{0}));
+                    consumerServiceClient.heatBeat21(pileCode, heatBeat21);
                     break;
                 }
                 case 0x22: {
@@ -201,9 +201,9 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
 //                log.info("ykc1.6订单结算:{}", orderNo);
 //                // 通知消费端，订单已结束
                     //   consumerNet.finishOrder(dto);
-                    consumerServiceClient.settleConsume(pileCode, settleConsume);
-                    ctx.writeAndFlush(msg.getReply(new byte[0]));
                     log.info("data = [{}]", settleConsume);
+                    ctx.writeAndFlush(msg.getReply(new byte[0]));
+                    consumerServiceClient.settleConsume(pileCode, settleConsume);
                     break;
                 }
                 case 0x04: {
@@ -241,8 +241,8 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     if (byteBufData.readableBytes() >= 2) {
                         portChargePowerHeatBeat.setTakeTime(byteBufData.readShortLE());
                     }
-                    consumerServiceClient.portChargePowerHeatBeat(pileCode,portChargePowerHeatBeat);
                     log.info("data = [{}]", portChargePowerHeatBeat);
+                    consumerServiceClient.portChargePowerHeatBeat(pileCode, portChargePowerHeatBeat);
                     break;
                 }
                 case 0x42: {
@@ -298,12 +298,12 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
         ctx.channel().attr(GlobalContext.activeTimestamp).setIfAbsent(System.currentTimeMillis());
-//        ctx.executor().schedule(() -> {
-//            if(ctx.channel().attr(GlobalContext.physicalIdAttr).get()==null){
-//                log.warn("ctx :[{}] no physicalId after connected for 30 seconds,will be close", ctx);
-//                ctx.close();
-//            }
-//        },30, TimeUnit.SECONDS);
+        ctx.executor().schedule(() -> {
+            if(ctx.channel().attr(GlobalContext.pileCodeAttr).get()==null){
+                log.warn("ctx :[{}] no physicalId after connected for 30 seconds,will be close", ctx);
+                ctx.close();
+            }
+        },30, TimeUnit.SECONDS);
     }
 
     @Override
@@ -319,8 +319,11 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        super.exceptionCaught(ctx, cause);
         log.error("exceptionCaught:ctx = [{}], cause = [{}]", ctx, cause);
+        Integer pileCode = ctx.channel().attr(pileCodeAttr).get();
+        if (pileCode != null) {
+            log.info("offline: pileCode:[{}]  channelHandlerContext = [{}]", pileCode, ctx);
+        }
         ctx.close();
     }
 }

@@ -17,14 +17,15 @@ import java.util.List;
 public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
     private static final Logger log = LoggerFactory.getLogger(AP3000Codec.class);
 
-   private static final AttributeKey<String> simAttr = AttributeKey.newInstance("simNo");
+    private static final AttributeKey<String> simAttr = AttributeKey.newInstance("simNo");
 
 
     @Override
     protected void encode(ChannelHandlerContext channelHandlerContext, UDianPackage msg, ByteBuf out) throws Exception {
+        log.debug("send to pileCode:[{}] msg:[{}]", channelHandlerContext.channel().attr(GlobalContext.pileCodeAttr), msg);
         out.writeBytes(msg.getDny().getBytes(StandardCharsets.UTF_8));
-        if(msg.getLength()>256){
-            throw new TooLongFrameException("length must less than 256 "+msg.toHexString());
+        if (msg.getLength() > 256) {
+            throw new TooLongFrameException("length must less than 256 " + msg.toHexString());
         }
         out.writeShortLE(msg.getLength());
         out.writeIntLE(msg.getPhysicalId());
@@ -57,7 +58,7 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
                 linkBuf.readBytes(linkByte);
                 String link = DatatypeConverter.printHexBinary(linkByte);
                 if ("6C696E6B".equals(link)) {
-                    if(log.isDebugEnabled()){
+                    if (log.isDebugEnabled()) {
                         log.debug("pileCode = [{}],read link [{}]",
                                 channelHandlerContext.channel().attr(GlobalContext.pileCodeAttr), link);
                     }
@@ -73,44 +74,44 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
     }
 
     public static UDianPackage getYouDianPackage(ByteBuf decoded) {
-        ByteBuf data=null;
-       try {
-           byte[] toCalCheck = new byte[decoded.readableBytes() - 2];//去掉最后两字节的检校值后的数据参与计算校验值
-           decoded.getBytes(0, toCalCheck, 0, toCalCheck.length);
-           decoded.skipBytes(3);
-           int length = decoded.readUnsignedShortLE();
-           int physicalId = decoded.readIntLE();
-           int messageId = decoded.readUnsignedShortLE();
-           int command = decoded.readByte();
+        ByteBuf data = null;
+        try {
+            byte[] toCalCheck = new byte[decoded.readableBytes() - 2];//去掉最后两字节的检校值后的数据参与计算校验值
+            decoded.getBytes(0, toCalCheck, 0, toCalCheck.length);
+            decoded.skipBytes(3);
+            int length = decoded.readUnsignedShortLE();
+            int physicalId = decoded.readIntLE();
+            int messageId = decoded.readUnsignedShortLE();
+            int command = decoded.readByte();
             data = decoded.readBytes(length - 4 - 2 - 1 - 2);
             data.retain();
-           int check = decoded.readUnsignedShortLE();
+            int check = decoded.readUnsignedShortLE();
 
-           UDianPackage uDianPackage = new UDianPackage();
-           uDianPackage.setDny("DNY");
-           uDianPackage.setLength((short) length);
-           uDianPackage.setPhysicalId(physicalId);
-           uDianPackage.setMessageId((short) messageId);
-           uDianPackage.setCommand(command);
-           byte[] bytes = new byte[length - 4 - 2 - 1 - 2];
-           data.readBytes(bytes);
-           uDianPackage.setData(bytes);
-           uDianPackage.setCheck((short) check);
+            UDianPackage uDianPackage = new UDianPackage();
+            uDianPackage.setDny("DNY");
+            uDianPackage.setLength((short) length);
+            uDianPackage.setPhysicalId(physicalId);
+            uDianPackage.setMessageId((short) messageId);
+            uDianPackage.setCommand(command);
+            byte[] bytes = new byte[length - 4 - 2 - 1 - 2];
+            data.readBytes(bytes);
+            uDianPackage.setData(bytes);
+            uDianPackage.setCheck((short) check);
 
-           int calCheckValue = calCheck(toCalCheck);
-           if (calCheckValue != check) {
-               log.debug("cal check value :[{}],receive chekcValue[{}]", calCheckValue, check);
-               throw new IllegalArgumentException("calCheckValue: " + calCheckValue + " not equals to check: " + check);
-           }
-           return uDianPackage;
-       }catch (Exception e){
-           throw e;
-       }finally {
-           ReferenceCountUtil.release(decoded);
-           if(data!=null){
-               ReferenceCountUtil.release(data);
-           }
-       }
+            int calCheckValue = calCheck(toCalCheck);
+            if (calCheckValue != check) {
+                log.debug("cal check value :[{}],receive chekcValue[{}]", calCheckValue, check);
+                throw new IllegalArgumentException("calCheckValue: " + calCheckValue + " not equals to check: " + check);
+            }
+            return uDianPackage;
+        } catch (Exception e) {
+            throw e;
+        } finally {
+            ReferenceCountUtil.release(decoded);
+            if (data != null) {
+                ReferenceCountUtil.release(data);
+            }
+        }
     }
 
     private static int calCheck(byte[] data) {
