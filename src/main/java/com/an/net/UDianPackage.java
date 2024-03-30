@@ -98,7 +98,7 @@ public class UDianPackage {
                 ", length=" + length +
                 ", physicalId=" + physicalId2PileCode() +
                 ", messageId=" + messageId +
-                ", command=" + command +
+                ", command=0x" + Integer.toHexString(command) +
                 ", data=" + DatatypeConverter.printHexBinary(data) +
                 ", check=" + check +
                 '}';

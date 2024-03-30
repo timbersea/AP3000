@@ -56,7 +56,7 @@ public class AP3000Service {
         startCharge.setPort((byte)Byte.parseByte(dto.getGunCode()));
         startCharge.setChargeCommand((byte) 0);
         startCharge.setChargeTimeElectric((short) 0);
-        startCharge.setOrderNo(1111111111111111111L);
+        startCharge.setOrderNo(dto.getOrderId());
         startCharge.setMaxChargePower((short) 0);
         startCharge.setMaxChargeTime((short) 0);
         startCharge.setQRCodeLight((byte) 1);

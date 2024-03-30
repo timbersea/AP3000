@@ -4,9 +4,9 @@ import com.an.common.ConsumerNet;
 import com.an.common.ResponseCode;
 import com.an.entity.req.ChargeFinish;
 import com.an.entity.req.ChargePortOrderConfirm;
-import com.an.entity.req.PortChargePowerHeatBeat;
 import com.an.entity.req.PortStatus;
 import com.an.idl.client.ConsumeServiceClient;
+import com.an.idl.consumer.PortChargePowerHeatBeat;
 import com.an.idl.consumer.SwipingCardResp;
 import com.anju.common.dto.OrderAutoFinishChargeDto;
 import io.netty.buffer.ByteBuf;
@@ -230,7 +230,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     portChargePowerHeatBeat.setMinPower(byteBufData.readShortLE());
                     portChargePowerHeatBeat.setAvgPower(byteBufData.readShortLE());
                     byteBufData.skipBytes(8);
-                    portChargePowerHeatBeat.setOrderId(byteBufData.readLongLE() + "");
+                    portChargePowerHeatBeat.setOrderId(byteBufData.readLongLE());
                     portChargePowerHeatBeat.setTimeElectric(byteBufData.readShortLE());
                     portChargePowerHeatBeat.setPeakPower(byteBufData.readShortLE());
                     portChargePowerHeatBeat.setVoltage(byteBufData.readShortLE());
@@ -241,6 +241,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     if (byteBufData.readableBytes() >= 2) {
                         portChargePowerHeatBeat.setTakeTime(byteBufData.readShortLE());
                     }
+                    consumerServiceClient.portChargePowerHeatBeat(pileCode,portChargePowerHeatBeat);
                     log.info("data = [{}]", portChargePowerHeatBeat);
                     break;
                 }
