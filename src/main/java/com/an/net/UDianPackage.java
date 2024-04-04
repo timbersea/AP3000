@@ -30,8 +30,8 @@ public class UDianPackage {
         return check;
     }
 
-    public byte getDeviceType() {
-        return (byte) (physicalId & 0xFF);
+    public int getDeviceType() {
+        return (physicalId & 0xFF);
 
     }
 
