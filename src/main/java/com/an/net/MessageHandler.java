@@ -202,7 +202,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
 //                // 通知消费端，订单已结束
                     //   consumerNet.finishOrder(dto);
                     log.info("data = [{}]", settleConsume);
-                    ctx.writeAndFlush(msg.getReply(new byte[0]));
+                    ctx.writeAndFlush(msg.getReply(new byte[]{0}));
                     consumerServiceClient.settleConsume(pileCode, settleConsume);
                     break;
                 }
