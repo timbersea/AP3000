@@ -140,7 +140,7 @@ public class UDianPackage {
         uDianPackage.setCommand(this.command);
         uDianPackage.setData(data);
         uDianPackage.setLength((uDianPackage.calLength()));
-        uDianPackage.setCheck((short) 0x02);
+        uDianPackage.setCheck((short)AP3000Codec.calCheck(uDianPackage));
         return uDianPackage;
     }
 

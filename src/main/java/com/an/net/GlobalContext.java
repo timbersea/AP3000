@@ -50,7 +50,7 @@ public class GlobalContext {
     public static void completeResponse(Short messageId, UDianPackage uDianPackage) {
         CompletableFuture<UDianPackage> uDianPackageCompletableFuture = completableFutureMap.get(messageId);
         if (uDianPackageCompletableFuture != null) {
-            log.debug("completeResponse:pileCode:[{}] messageId = [{}], uDianPackage = [{}]",
+            log.info("completeResponse:pileCode:[{}] messageId = [{}], uDianPackage = [{}]",
                     uDianPackage.getPileCode(), messageId,
                     uDianPackage);
             uDianPackageCompletableFuture.complete(uDianPackage);
@@ -81,7 +81,7 @@ public class GlobalContext {
         CompletableFuture<UDianPackage> uDianPackageCompletableFuture = new CompletableFuture<>();
         completableFutureMap.put(uDianPackage.getMessageId(), uDianPackageCompletableFuture);
         try {
-            log.debug("request to pileCode: [{}] messageId [{}]  wait for response", pileCode,
+            log.info("request to pileCode: [{}] messageId [{}]  wait for response", pileCode,
                     uDianPackage.getMessageId());
             return uDianPackageCompletableFuture.get(30, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
