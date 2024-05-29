@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 
+/**
+ * 提供http接口供其它系统调用，无鉴权，仅供内部网络调用
+ */
 @RestController
 public class IotController {
     @Resource

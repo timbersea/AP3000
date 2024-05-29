@@ -49,7 +49,9 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
         byteBufData.writeBytes(data);
         // MessageDispatcher.getService(command);
         try {
+            //各个包的的字段详细见文档AP3000第二版-设备与服务器通信协议.pdf
             switch (command) {
+                //心跳包
                 case 0x01: {
                     com.an.idl.consumer.HeatBeat heatBeat = new com.an.idl.consumer.HeatBeat();
                     //小端转大端
@@ -86,6 +88,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     consumerServiceClient.heatBeat(pileCode, heatBeat);
                     break;
                 }
+                //注册消息
                 case 0x20: {
                     com.an.idl.consumer.Register register = new com.an.idl.consumer.Register();
                     register.setFirmwareVersion(byteBufData.readShortLE());
@@ -103,6 +106,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
 
                     break;
                 }
+                //21，注册消息的一种
                 case 0x21: {
                     com.an.idl.consumer.HeatBeat21 heatBeat21 = new com.an.idl.consumer.HeatBeat21();
                     heatBeat21.setVoltage(byteBufData.readShortLE());
@@ -122,6 +126,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     consumerServiceClient.heatBeat21(pileCode, heatBeat21);
                     break;
                 }
+                //获取时间
                 case 0x22: {
                     Integer number = (int) (System.currentTimeMillis() / 1000);
                     byte[] byteArray = new byte[4];
@@ -132,6 +137,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     ctx.writeAndFlush(msg.getReply(byteArray));
                     break;
                 }
+                //收到设备上报的刷卡消息
                 case 0x02: {
                     com.an.idl.consumer.SwipingCard swipingCard = new com.an.idl.consumer.SwipingCard();
                     swipingCard.setCardId(byteBufData.readInt());
@@ -156,6 +162,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     ctx.writeAndFlush(msg.getReply(buffer.array()));
                     break;
                 }
+                //订单结算消息
                 case 0x03: {
                     com.an.idl.consumer.SettleConsume settleConsume = new com.an.idl.consumer.SettleConsume();
                     settleConsume.setChargeTime(byteBufData.readShortLE());
@@ -206,6 +213,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     consumerServiceClient.settleConsume(pileCode, settleConsume);
                     break;
                 }
+                //充电订单确认
                 case 0x04: {
                     ChargePortOrderConfirm chargePortOrderConfirm = new ChargePortOrderConfirm();
                     chargePortOrderConfirm.setPort(byteBufData.readByte());
@@ -218,6 +226,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     ctx.writeAndFlush(msg.getReply(new byte[]{chargePortOrderConfirm.getPort(), 0}));
                     break;
                 }
+                //充电口功率心跳数据
                 case 0x06: {
                     PortChargePowerHeatBeat portChargePowerHeatBeat = new PortChargePowerHeatBeat();
                     portChargePowerHeatBeat.setPort(byteBufData.readByte());
@@ -249,6 +258,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     log.info("data = [{}] {}", byteBufData.readByte(), byteBufData.readByte());
                     break;
                 }
+                //订单结束
                 case 0x43: {
                     ChargeFinish chargeFinish = new ChargeFinish();
                     chargeFinish.setChargeTime(byteBufData.readShortLE());
@@ -263,6 +273,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     log.info("data = [{}]", chargeFinish);
                     break;
                 }
+                //充电口状态
                 case 0x44: {
                     PortStatus portStatus = new PortStatus();
                     portStatus.setPushType(byteBufData.readByte());
