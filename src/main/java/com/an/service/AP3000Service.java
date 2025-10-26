@@ -1,6 +1,6 @@
 package com.an.service;
 
-import com.an.entity.*;
+import com.an.dto.*;
 import com.an.net.GlobalContext;
 import com.an.net.UDianPackage;
 import io.netty.buffer.ByteBuf;
@@ -26,7 +26,7 @@ public class AP3000Service {
      */
     public ByteBuf send(int pileCode, byte command, ByteBuffer data) {
         UDianPackage uDianPackage = new UDianPackage(pileCode, command, new byte[0]);
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
         ByteBuf responseData = Unpooled.buffer(response.getData().length).writeBytes(response.getData());
         return responseData;
     }
@@ -37,7 +37,7 @@ public class AP3000Service {
      */
     public void syncDeviceStatus(int pileCode, byte command)  {
         UDianPackage uDianPackage = new UDianPackage(pileCode, command, new byte[0]);
-        GlobalContext.asyncWriteData(pileCode, uDianPackage);
+        GlobalContext.asyncWriteData(uDianPackage);
     }
 
     /**
@@ -66,7 +66,7 @@ public class AP3000Service {
         UDianPackage toSend = new UDianPackage(pileCode, (byte) 0x82, toWrite.array());
 
 
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, toSend);
+        UDianPackage response = GlobalContext.requestAndResponse(toSend);
         byte[] data = response.getData();
         ByteBuf buffer = Unpooled.buffer(data.length);
         buffer.writeBytes(data);
@@ -90,7 +90,7 @@ public class AP3000Service {
         toWrite.writeShortLE(p.getChargeTimeEnerge());
         UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x8A, toWrite.array());
 
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
 
         byte[] data = response.getData();
         return data[0];
@@ -109,7 +109,7 @@ public class AP3000Service {
         toWrite.writeShortLE(p.getHeartbeatReportingInterval());
         UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x83, toWrite.array());
 
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
         return response.getData()[0];
     }
 
@@ -136,7 +136,7 @@ public class AP3000Service {
 
         UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x84, toWrite.array());
 
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
         return response.getData()[0];
     }
 
@@ -150,7 +150,7 @@ public class AP3000Service {
         toWrite.writeShortLE(p.getMaxChargePower());
         UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x85, toWrite.array());
 
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
         return response.getData()[0];
     }
 
@@ -165,7 +165,7 @@ public class AP3000Service {
         toWrite.writeBytes(p.getNewCardPassword());
         UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x86, toWrite.array());
 
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
         return response.getData()[0];
     }
 
@@ -175,7 +175,7 @@ public class AP3000Service {
      */
     public byte resetAndRestart(int pileCode)  {
         UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x87, new byte[0]);
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
         return response.getData()[0];
     }
 
@@ -185,7 +185,7 @@ public class AP3000Service {
      */
     public byte romClean(int pileCode)  {
         UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x88, new byte[0]);
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
         return response.getData()[0];
     }
 
@@ -210,7 +210,7 @@ public class AP3000Service {
      */
     public byte setDeviceWorkMode(int pileCode, byte p)  {
         UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x8D, new byte[0]);
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
         return response.getData()[0];
     }
 
@@ -224,7 +224,7 @@ public class AP3000Service {
         toWrite.writeBytes(p.getFirmware());
         UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0xE1, toWrite.array());
 
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
         FirmwareUpdateResp firmwareUpdateResp = new FirmwareUpdateResp();
 
         ByteBuf buffer = Unpooled.buffer(3);
@@ -246,7 +246,7 @@ public class AP3000Service {
         toWrite.writeBytes(p.getFirmware());
         UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0xE1, toWrite.array());
 
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
         FirmwareUpdateResp firmwareUpdateResp = new FirmwareUpdateResp();
 
         ByteBuf buffer = Unpooled.buffer(3);
@@ -264,7 +264,7 @@ public class AP3000Service {
     public PowerSettings1 query90(int pileCode)  {
 
         UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x90, new byte[0]);
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
 
         PowerSettings1 powerSettings1 = new PowerSettings1();
         ByteBuf buffer = Unpooled.buffer(response.getData().length);
@@ -285,7 +285,7 @@ public class AP3000Service {
 
 
         UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x91, new byte[0]);
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
         ByteBuf byteBuf = Unpooled.copiedBuffer(response.getData());
 
         PowerSettings2 powerSettings2 = new PowerSettings2();
@@ -316,7 +316,7 @@ public class AP3000Service {
 
 
         UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x92, new byte[0]);
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
         ByteBuf byteBuf = Unpooled.copiedBuffer(response.getData());
 
         PowerSettings2 powerSettings2 = new PowerSettings2();
@@ -347,7 +347,7 @@ public class AP3000Service {
 
 
         UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x93, new byte[0]);
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
         ByteBuf byteBuf = Unpooled.copiedBuffer(response.getData());
         UserCard userCard = new UserCard();
         userCard.setUserSector(byteBuf.readByte());
@@ -377,7 +377,7 @@ public class AP3000Service {
         byte[] bytes = new byte[toWrite.readableBytes()];
 
         UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x8B, bytes);
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
 
         ReadEEPROMResp readEEPROMResp = new ReadEEPROMResp();
         readEEPROMResp.setIsSuccess(response.getData()[0]);
@@ -400,7 +400,7 @@ public class AP3000Service {
         toWrite.writeBytes(p.getEEPROMDATA());
 
         UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x8C, toWrite.array());
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
 
         return response.getData()[0];
     }
@@ -417,7 +417,7 @@ public class AP3000Service {
         toWrite.writeBytes(p.getQRCode());
 
         UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x8E, toWrite.array());
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
 
         return response.getData()[0];
     }
@@ -430,7 +430,7 @@ public class AP3000Service {
         byte[] bytes = new byte[1];
         bytes[0] = mode;
         UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x8F, bytes);
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
 
         return response.getData()[0];
     }
@@ -445,7 +445,7 @@ public class AP3000Service {
         toWrite.writeLongLE(0L);
         toWrite.writeBytes(p.getOrderNo());
         UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x72, toWrite.array());
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
         StopChargeResp stopChargeResp = new StopChargeResp();
 
         ByteBuf byteBuf = Unpooled.copiedBuffer(response.getData());
@@ -461,7 +461,7 @@ public class AP3000Service {
     public byte temporaryQRCode(int pileCode, ByteBuffer p)  {
         UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x95, p.array());
 
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
         return response.getData()[0];
     }
 
@@ -474,7 +474,7 @@ public class AP3000Service {
         bytes[0] = p;
         UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x96, bytes);
 
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
         return response.getData()[0];
     }
 
@@ -487,7 +487,7 @@ public class AP3000Service {
         bytes[0] = p;
         UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x97, bytes);
 
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
         return response.getData()[0];
     }
 
@@ -500,7 +500,7 @@ public class AP3000Service {
         bytes[0] = p.getFunction();
         bytes[1] = p.getPort();
         UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0x98, bytes);
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
         return response.getData()[0];
     }
 
@@ -514,7 +514,7 @@ public class AP3000Service {
         buffer.writeInt(p.getR2());
         buffer.writeInt(p.getR3());
         UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0xFE, buffer.array());
-        UDianPackage response = GlobalContext.requestAndResponse(pileCode, uDianPackage);
+        UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
         return response.getData()[0];
     }
 }

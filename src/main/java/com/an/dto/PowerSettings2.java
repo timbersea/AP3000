@@ -1,4 +1,4 @@
-package com.an.entity;
+package com.an.dto;
 
 import lombok.Data;
 
@@ -7,6 +7,8 @@ import java.io.Serializable;
 // 运行参数1.2结构体
 @Data
 public class PowerSettings2 implements Serializable {
+    private int pileCode;
+
     private short dynamicOverloadPower; // 动态过载功率（Thrift i16 → Java short）
     private short dynamicOverloadRecognitionTime; // 动态过载识别时间（Thrift i16 → Java short）
     private short dynamicOverloadStartTime; // 动态过载开始时间（Thrift i16 → Java short）

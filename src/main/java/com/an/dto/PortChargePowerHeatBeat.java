@@ -1,9 +1,11 @@
-package com.an.entity;
+package com.an.dto;
 
 import lombok.Data;
 
 @Data
 public class PortChargePowerHeatBeat {
+    private int pileCode;
+
     private byte port;//端口号
     private byte portStatus;//端口状态
     private short chargeTime;//充电时长

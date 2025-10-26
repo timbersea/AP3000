@@ -1,9 +1,12 @@
-package com.an.entity;
+package com.an.dto;
 
 import lombok.Data;
 
 @Data
 public class SwipingCard {
+    private int pileCode;
+
+
     private int cardId;
     private byte cardType;
     private byte port;

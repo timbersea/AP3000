@@ -1,9 +1,12 @@
-package com.an.entity;
+package com.an.dto;
 
 import lombok.Data;
 
 @Data
 public class HeatBeat21 {
+    private int pileCode;
+
+
     /**
      * 电压
      */

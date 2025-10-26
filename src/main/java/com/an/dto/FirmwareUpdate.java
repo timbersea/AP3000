@@ -1,4 +1,4 @@
-package com.an.entity;
+package com.an.dto;
 
 import lombok.Data;
 
@@ -7,6 +7,8 @@ import java.io.Serializable;
 // 固件升级结构体（E0/E1/E2指令）
 @Data
 public class FirmwareUpdate implements Serializable {
+    private int pileCode;
+
     private short totalPackage; // 总包数（Thrift i16 → Java short）
     private short currentPackage; // 当前包（Thrift i16 → Java short）
     private byte[] firmware; // 固件（Thrift binary → Java byte[]）

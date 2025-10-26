@@ -1,4 +1,4 @@
-package com.an.entity;
+package com.an.dto;
 
 import lombok.Data;
 
@@ -7,6 +7,8 @@ import lombok.Data;
  */
 @Data
 public class ChargePortOrderConfirm {
+    private int pileCode;
+
     private byte port;
     private byte status;
     private int cardId;

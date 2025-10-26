@@ -1,9 +1,11 @@
-package com.an.entity;
+package com.an.dto;
 
 import lombok.Data;
 
 @Data
 public class Register {
+    private int pileCode;
+
     /**
      * 固件版本
      */

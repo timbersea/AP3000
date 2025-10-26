@@ -1,4 +1,4 @@
-package com.an.entity;
+package com.an.dto;
 
 import lombok.Data;
 
@@ -7,6 +7,8 @@ import java.io.Serializable;
 // 充电开始请求结构体
 @Data
 public class StartCharge implements Serializable {
+    private int pileCode;
+
     private byte feeType; // 费率模式（Thrift i8 → Java byte）
     private int balanceValidateDate; // 余额/有效期（Thrift i32 → Java int）
     private byte port; // 端口号（Thrift i8 → Java byte）

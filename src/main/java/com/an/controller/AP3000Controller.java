@@ -1,6 +1,6 @@
 package com.an.controller;
 
-import com.an.entity.*;
+import com.an.dto.*;
 import com.an.service.AP3000Service;
 import io.netty.buffer.ByteBuf;
 import org.springframework.web.bind.annotation.RestController;

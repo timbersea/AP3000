@@ -1,9 +1,11 @@
-package com.an.entity;
+package com.an.dto;
 
 import lombok.Data;
 
 @Data
 public class SettleConsume {
+    private int pileCode;
+
     private short chargeTime;
     private short maxPower;
     private short electric;

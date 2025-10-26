@@ -45,7 +45,7 @@ public class GlobalContext {
         }
     }
 
-    public static void completeResponse(Short messageId, UDianPackage uDianPackage) {
+    static void completeResponse(Short messageId, UDianPackage uDianPackage) {
         CompletableFuture<UDianPackage> uDianPackageCompletableFuture = completableFutureMap.get(messageId);
         if (uDianPackageCompletableFuture != null) {
             log.info("completeResponse:pileCode:[{}] messageId = [{}], uDianPackage = [{}]",
@@ -55,7 +55,8 @@ public class GlobalContext {
         }
     }
 
-    public static void asyncWriteData(Integer pileCode, UDianPackage uDianPackage)  {
+    public static void asyncWriteData(UDianPackage uDianPackage)  {
+        int pileCode = uDianPackage.getPileCode();
         ChannelHandlerContext channelHandlerContext = pileCodeChannelContext.get(pileCode);
         if (channelHandlerContext == null || !channelHandlerContext.channel().isActive()) {
             throw new RuntimeException(pileCode + " is not connect to server");
@@ -84,12 +85,12 @@ public class GlobalContext {
         return physicalId;
     }
 
-    public static UDianPackage requestAndResponse(Integer pileCode, UDianPackage uDianPackage){
-        asyncWriteData(pileCode, uDianPackage);
+    public static UDianPackage requestAndResponse(UDianPackage uDianPackage){
+        asyncWriteData(uDianPackage);
         CompletableFuture<UDianPackage> uDianPackageCompletableFuture = new CompletableFuture<>();
         completableFutureMap.put(uDianPackage.getMessageId(), uDianPackageCompletableFuture);
         try {
-            log.info("request to pileCode: [{}] messageId [{}]  wait for response", pileCode,
+            log.info("request to pileCode: [{}] messageId [{}]  wait for response", uDianPackage.getPileCode(),
                     uDianPackage.getMessageId());
             return uDianPackageCompletableFuture.get(5, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
@@ -97,7 +98,7 @@ public class GlobalContext {
         } catch (ExecutionException e) {
             throw new RuntimeException(e.getMessage());
         } catch (TimeoutException e) {
-            throw new RuntimeException(pileCode + " response timeout for 3 seconds");
+            throw new RuntimeException(uDianPackage.getPileCode() + " response timeout for 3 seconds");
         } finally {
             completableFutureMap.remove(uDianPackage.getMessageId());
         }

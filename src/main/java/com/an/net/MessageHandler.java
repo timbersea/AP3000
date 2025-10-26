@@ -1,6 +1,6 @@
 package com.an.net;
 
-import com.an.entity.*;
+import com.an.dto.*;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
@@ -37,6 +37,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                 //心跳包
                 case 0x01: {
                     HeatBeat heatBeat = new HeatBeat();
+                    heatBeat.setPileCode(pileCode);
                     //小端转大端
                     heatBeat.setFirmwareVersion(byteBufData.readShortLE());
                     heatBeat.setVoltage(byteBufData.readShortLE());
@@ -73,6 +74,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                 //注册消息
                 case 0x20: {
                     Register register = new Register();
+                    register.setPileCode(pileCode);
                     register.setFirmwareVersion(byteBufData.readShortLE());
                     register.setPortNum(byteBufData.readByte());
                     register.setVirtualId(byteBufData.readByte());
@@ -89,6 +91,8 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                 //21，注册消息的一种
                 case 0x21: {
                     HeatBeat21 heatBeat21 = new HeatBeat21();
+                    heatBeat21.setPileCode(pileCode);
+
                     heatBeat21.setVoltage(byteBufData.readShortLE());
                     heatBeat21.setPortNum(byteBufData.readByte());
                     byte[] portStatus = new byte[heatBeat21.getPortNum()];
@@ -119,6 +123,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                 //收到设备上报的刷卡消息
                 case 0x02: {
                     SwipingCard swipingCard = new SwipingCard();
+                    swipingCard.setPileCode(pileCode);
                     swipingCard.setCardId(byteBufData.readInt());
                     swipingCard.setCardType(byteBufData.readByte());
                     swipingCard.setPort(byteBufData.readByte());
@@ -144,6 +149,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                 //订单结算消息
                 case 0x03: {
                     SettleConsume settleConsume = new SettleConsume();
+                    settleConsume.setPileCode(pileCode);
                     settleConsume.setChargeTime(byteBufData.readShortLE());
                     settleConsume.setMaxPower(byteBufData.readShortLE());
                     settleConsume.setElectric(byteBufData.readShortLE());
@@ -167,6 +173,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                 //充电订单确认
                 case 0x04: {
                     ChargePortOrderConfirm chargePortOrderConfirm = new ChargePortOrderConfirm();
+                    chargePortOrderConfirm.setPileCode(pileCode);
                     chargePortOrderConfirm.setPort(byteBufData.readByte());
                     chargePortOrderConfirm.setStatus(byteBufData.readByte());
                     chargePortOrderConfirm.setCardId(byteBufData.readInt());
@@ -180,6 +187,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                 //充电口功率心跳数据
                 case 0x06: {
                     PortChargePowerHeatBeat portChargePowerHeatBeat = new PortChargePowerHeatBeat();
+                    portChargePowerHeatBeat.setPileCode(pileCode);
                     portChargePowerHeatBeat.setPort(byteBufData.readByte());
                     portChargePowerHeatBeat.setPortStatus(byteBufData.readByte());
                     portChargePowerHeatBeat.setChargeTime(byteBufData.readShortLE());
@@ -211,6 +219,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                 //订单结束
                 case 0x43: {
                     ChargeFinish chargeFinish = new ChargeFinish();
+                    chargeFinish.setPileCode(pileCode);
                     chargeFinish.setChargeTime(byteBufData.readShortLE());
                     chargeFinish.setMaxPower(byteBufData.readShortLE());
                     chargeFinish.setElectric(byteBufData.readShortLE());
@@ -226,6 +235,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                 //充电口状态
                 case 0x44: {
                     PortStatus portStatus = new PortStatus();
+                    portStatus.setPileCode(pileCode);
                     portStatus.setPushType(byteBufData.readByte());
                     portStatus.setPort(byteBufData.readByte());
                     byteBufData.skipBytes(8);
