@@ -14,7 +14,7 @@ public class UDianPackage {
 
     private String dny = "DNY";
     private short length;
-    private Integer physicalId;
+    private int physicalId;
     private int pileCode;
     private short messageId;
     private int command;//协议中实际占一个字节
@@ -92,6 +92,10 @@ public class UDianPackage {
         this.check = check;
     }
 
+    public void setPileCode(int pileCode) {
+        this.pileCode = pileCode;
+    }
+
     @Override
     public String toString() {
         return "YouDianPackage{" +
@@ -164,6 +168,23 @@ public class UDianPackage {
         int pileCode = physicalId & 0x00FFFFFF;
         return pileCode;
     }
+    /**
+     * pileCode转physicalId
+     * @param pileCode 业务系统使用pileCode标识设备
+     * @param deviceTypeAttr 设备型号
+     * @return 设备与服务器通信识别的physicalId
+     */
+    public static int pileCode2PhysicalId(Integer pileCode,byte deviceTypeAttr){
+        ByteBuf buffer = Unpooled.buffer(4);
+        buffer.writeByte(pileCode&0xFF);
+        buffer.writeByte((pileCode&0xFF00)>>8);
+        buffer.writeByte((pileCode&0xFF0000)>>16);
+        buffer.writeByte(deviceTypeAttr);
+        int physicalId = buffer.readIntLE();
+        ReferenceCountUtil.release(buffer);
+        return physicalId;
+    }
+
     public  final byte physicalId2Type(){
         return (byte) ((physicalId&0xFF000000)>>24);
     }

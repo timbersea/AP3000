@@ -1,15 +1,14 @@
 package com.an.net;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.AttributeKey;
-import io.netty.util.ReferenceCountUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.concurrent.*;
+
+import static com.an.net.UDianPackage.pileCode2PhysicalId;
 
 public class GlobalContext {
     private static final Logger log = LoggerFactory.getLogger(GlobalContext.class);
@@ -68,22 +67,6 @@ public class GlobalContext {
         channelHandlerContext.writeAndFlush(uDianPackage);
     }
 
-    /**
-     * pileCode转physicalId
-     * @param pileCode 业务系统使用pileCode标识设备
-     * @param deviceTypeAttr 设备型号
-     * @return 设备与服务器通信识别的physicalId
-     */
-    private static int pileCode2PhysicalId(Integer pileCode,byte deviceTypeAttr){
-        ByteBuf buffer = Unpooled.buffer(4);
-        buffer.writeByte(pileCode&0xFF);
-        buffer.writeByte((pileCode&0xFF00)>>8);
-        buffer.writeByte((pileCode&0xFF0000)>>16);
-        buffer.writeByte(deviceTypeAttr);
-        int physicalId = buffer.readIntLE();
-        ReferenceCountUtil.release(buffer);
-        return physicalId;
-    }
 
     public static UDianPackage requestAndResponse(UDianPackage uDianPackage){
         asyncWriteData(uDianPackage);
