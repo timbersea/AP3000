@@ -19,11 +19,11 @@ TCP 8888 提供给AP3000类型的设备连接，可在AP3000TCPServer的中修�
 TCP 9122 http端口号，context-path: /iotApi
 
 ### 包结构简介
-common 对接已经的安居物联用，用于调用consumer端的接口
-controller  http接口暴露出来的控制设备的接口
-dto 各种数据结构的基本封装java bean
-net AP3000设备协议的解析，网络字节流的codec
-service 业务层，暴露硬件控制指令方法
+- common 对接已经的安居物联用，用于调用consumer端的接口
+- controller  http接口暴露出来的控制设备的接口
+- dto 各种数据结构的基本封装java bean
+- net AP3000设备协议的解析，网络字节流的codec
+- service 业务层，暴露硬件控制指令方法
 
 ### 依赖库见pom文件
 mvn clean install -DskipTests=true
