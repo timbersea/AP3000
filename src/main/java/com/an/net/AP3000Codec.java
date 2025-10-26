@@ -9,11 +9,15 @@ import io.netty.util.AttributeKey;
 import io.netty.util.ReferenceCountUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+/**
+ * AP3000的codec实现
+ */
 public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
     private static final Logger log = LoggerFactory.getLogger(AP3000Codec.class);
 
@@ -100,7 +104,7 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
 
             int calCheckValue = calCheck(toCalCheck);
             if (calCheckValue != check) {
-                log.debug("cal check value :[{}],receive chekcValue[{}]", calCheckValue, check);
+                log.debug("cal check value :[{}],receive checkValue[{}]", calCheckValue, check);
                 throw new IllegalArgumentException("calCheckValue: " + calCheckValue + " not equals to check: " + check);
             }
             return uDianPackage;

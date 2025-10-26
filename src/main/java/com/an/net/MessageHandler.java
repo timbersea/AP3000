@@ -1,14 +1,6 @@
 package com.an.net;
 
-import com.an.common.ConsumerNet;
-import com.an.common.ResponseCode;
-import com.an.entity.req.ChargeFinish;
-import com.an.entity.req.ChargePortOrderConfirm;
-import com.an.entity.req.PortStatus;
-import com.an.idl.client.ConsumeServiceClient;
-import com.an.idl.consumer.PortChargePowerHeatBeat;
-import com.an.idl.consumer.SwipingCardResp;
-import com.anju.common.dto.OrderAutoFinishChargeDto;
+import com.an.entity.*;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
@@ -17,10 +9,6 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 import static com.an.net.GlobalContext.pileCodeAttr;
@@ -28,11 +16,6 @@ import static com.an.net.GlobalContext.pileCodeAttr;
 @Component
 @ChannelHandler.Sharable
 public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
-    @Resource
-    ConsumerNet consumerNet;
-    @Resource
-
-    ConsumeServiceClient consumerServiceClient;
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(MessageHandler.class);
 
     @Override
@@ -53,24 +36,24 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
             switch (command) {
                 //心跳包
                 case 0x01: {
-                    com.an.idl.consumer.HeatBeat heatBeat = new com.an.idl.consumer.HeatBeat();
+                    HeatBeat heatBeat = new HeatBeat();
                     //小端转大端
                     heatBeat.setFirmwareVersion(byteBufData.readShortLE());
                     heatBeat.setVoltage(byteBufData.readShortLE());
                     heatBeat.setPortNum(byteBufData.readByte());
                     byte portNum = heatBeat.getPortNum();
                     byte[] portStatus = new byte[portNum];
-                    ArrayList<Short> currentPower = new ArrayList<>(portNum * 2);
-                    ArrayList<Short> peakPower = new ArrayList<>(portNum * 2);
+                    short [] currentPower = new short[portNum];;
+                    short [] peakPower = new short[portNum * 2];
 
                     for (int i = 0; i < portNum; i++) {
                         portStatus[i] = byteBufData.readByte();
                     }
                     for (int i = 0; i < portNum; i++) {
-                        currentPower.add(byteBufData.readShortLE());
+                        currentPower[i]=(byteBufData.readShortLE());
                     }
                     for (int i = 0; i < portNum; i++) {
-                        peakPower.add(byteBufData.readShortLE());
+                        peakPower[i]=(byteBufData.readShortLE());
                     }
 
                     heatBeat.setPortStatus(portStatus);
@@ -85,12 +68,11 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     ctx.writeAndFlush(msg.getReply(new byte[]{0}));
                     log.info(" data = [{}]", heatBeat);
                     log.info(("deviceType :[{}] pileCode[{}]"), msg.getDeviceType(), msg.getPileCode());
-                    consumerServiceClient.heatBeat(pileCode, heatBeat);
                     break;
                 }
                 //注册消息
                 case 0x20: {
-                    com.an.idl.consumer.Register register = new com.an.idl.consumer.Register();
+                    Register register = new Register();
                     register.setFirmwareVersion(byteBufData.readShortLE());
                     register.setPortNum(byteBufData.readByte());
                     register.setVirtualId(byteBufData.readByte());
@@ -102,13 +84,11 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
 
                     log.info(" data = [{}]", register);
                     ctx.writeAndFlush(msg.getReply(new byte[]{0}));
-                    consumerServiceClient.register(pileCode, register);
-
                     break;
                 }
                 //21，注册消息的一种
                 case 0x21: {
-                    com.an.idl.consumer.HeatBeat21 heatBeat21 = new com.an.idl.consumer.HeatBeat21();
+                    HeatBeat21 heatBeat21 = new HeatBeat21();
                     heatBeat21.setVoltage(byteBufData.readShortLE());
                     heatBeat21.setPortNum(byteBufData.readByte());
                     byte[] portStatus = new byte[heatBeat21.getPortNum()];
@@ -123,7 +103,6 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
 
                     log.info(" data = [{}]", heatBeat21);
                     ctx.writeAndFlush(msg.getReply(new byte[]{0}));
-                    consumerServiceClient.heatBeat21(pileCode, heatBeat21);
                     break;
                 }
                 //获取时间
@@ -139,7 +118,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                 }
                 //收到设备上报的刷卡消息
                 case 0x02: {
-                    com.an.idl.consumer.SwipingCard swipingCard = new com.an.idl.consumer.SwipingCard();
+                    SwipingCard swipingCard = new SwipingCard();
                     swipingCard.setCardId(byteBufData.readInt());
                     swipingCard.setCardType(byteBufData.readByte());
                     swipingCard.setPort(byteBufData.readByte());
@@ -152,7 +131,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                         byteBufData.readBytes(bytes);
                         swipingCard.setCard2(bytes);
                     }
-                    SwipingCardResp swipingCardResp = consumerServiceClient.swipingChard(pileCode, swipingCard);
+                    SwipingCardResp swipingCardResp = new SwipingCardResp();
                     ByteBuf buffer = Unpooled.buffer(11);
                     buffer.writeIntLE(swipingCard.getCardId());
                     buffer.writeByte(swipingCard.getCardType());
@@ -164,7 +143,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                 }
                 //订单结算消息
                 case 0x03: {
-                    com.an.idl.consumer.SettleConsume settleConsume = new com.an.idl.consumer.SettleConsume();
+                    SettleConsume settleConsume = new SettleConsume();
                     settleConsume.setChargeTime(byteBufData.readShortLE());
                     settleConsume.setMaxPower(byteBufData.readShortLE());
                     settleConsume.setElectric(byteBufData.readShortLE());
@@ -173,7 +152,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     settleConsume.setCardId(byteBufData.readInt());
                     settleConsume.setStopReason(byteBufData.readByte());
                     byteBufData.skipBytes(8);
-                    settleConsume.setOrderId(byteBufData.readLongLE());
+                    settleConsume.setOrderId(String.valueOf(byteBufData.readLongLE()));
                     settleConsume.setSecondMaxPower(byteBufData.readShortLE());
                     if (byteBufData.readableBytes() >= 4) {
                         settleConsume.setTimestamp(byteBufData.readIntLE());
@@ -182,35 +161,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                         settleConsume.setOccupiedTime(byteBufData.readShortLE());
                     }
                     ctx.writeAndFlush(msg.getReply(new byte[]{0}));
-
-                    OrderAutoFinishChargeDto dto = new OrderAutoFinishChargeDto();
-                    dto.setOrderNo(settleConsume.getOrderId() + "");
-                    dto.setPileCode(msg.getPileCode() + "");
-                    dto.setGunCode(settleConsume.getPort() + "");
-                    dto.setStartTime(new Date(new Date().getTime() - 1 * 3600 * 1000));
-                    dto.setEndTime(new Date());
-
-
-                    dto.setElectricityStart("0");
-                    dto.setElectricityEnd("" + settleConsume.getElectric());
-                    // 总电量
-                    dto.setTotalElectricity(new BigDecimal(settleConsume.getElectric() + ""));
-                    // 计损总电量
-                    dto.setLossTotalElectricity(dto.getTotalElectricity());
-                    // 消费金额
-                    dto.setConsumerAmount(new BigDecimal("3.00"));
-                    dto.setStopReason(settleConsume.getStopReason() + "");
-                    dto.setStopReasonName(ResponseCode.getStopReasonDescription(settleConsume.getStopReason()));
-
-//                String key = CacheConstants.PILE_ORDER_SETTLE_DATA + orderNo;
-//                redisCache.setCacheObject(key, dto, 7, TimeUnit.DAYS);
-//
-//                log.info("ykc1.6订单结算:{}", orderNo);
-//                // 通知消费端，订单已结束
-                    //   consumerNet.finishOrder(dto);
                     log.info("data = [{}]", settleConsume);
-                    ctx.writeAndFlush(msg.getReply(new byte[]{0}));
-                    consumerServiceClient.settleConsume(pileCode, settleConsume);
                     break;
                 }
                 //充电订单确认
@@ -239,7 +190,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     portChargePowerHeatBeat.setMinPower(byteBufData.readShortLE());
                     portChargePowerHeatBeat.setAvgPower(byteBufData.readShortLE());
                     byteBufData.skipBytes(8);
-                    portChargePowerHeatBeat.setOrderId(byteBufData.readLongLE());
+                    portChargePowerHeatBeat.setOrderId(String.valueOf(byteBufData.readLongLE()));
                     portChargePowerHeatBeat.setTimeElectric(byteBufData.readShortLE());
                     portChargePowerHeatBeat.setPeakPower(byteBufData.readShortLE());
                     portChargePowerHeatBeat.setVoltage(byteBufData.readShortLE());
@@ -251,7 +202,6 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                         portChargePowerHeatBeat.setTakeTime(byteBufData.readShortLE());
                     }
                     log.info("data = [{}]", portChargePowerHeatBeat);
-                    consumerServiceClient.portChargePowerHeatBeat(pileCode, portChargePowerHeatBeat);
                     break;
                 }
                 case 0x42: {

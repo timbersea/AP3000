@@ -7,7 +7,6 @@ public class MessageDispatcher {
     private static Map<Byte, AbstractService> r = new ConcurrentHashMap<>();
 
     static {
-        r.put((byte) 0x01, new HeatBeatService());
     }
 
 

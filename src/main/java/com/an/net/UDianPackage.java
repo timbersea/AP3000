@@ -3,6 +3,7 @@ package com.an.net;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.ReferenceCountUtil;
+import lombok.Data;
 
 import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.StandardCharsets;

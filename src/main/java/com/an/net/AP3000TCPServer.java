@@ -43,6 +43,7 @@ public class AP3000TCPServer implements CommandLineRunner {
                 .option(ChannelOption.SO_BACKLOG, 128)          // (5)
                 .childOption(ChannelOption.SO_KEEPALIVE, true); // (6)
 
+        log.info("tcp server bind on port {}",8888);
         // Bind and start to accept incoming connections.
         ChannelFuture f = b.bind(8888).sync(); // (7)
 
