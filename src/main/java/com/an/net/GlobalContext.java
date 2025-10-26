@@ -93,7 +93,6 @@ public class GlobalContext {
                     uDianPackage.getMessageId());
             return uDianPackageCompletableFuture.get(5, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            Thread.interrupted();
             throw new RuntimeException(e.getMessage());
         } catch (ExecutionException e) {
             throw new RuntimeException(e.getMessage());
