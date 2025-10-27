@@ -1,6 +1,7 @@
 package com.an.net;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
@@ -47,7 +48,7 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
                 ByteBuf simNoBuf = byteBuf.slice(0, 20);
                 byte[] simNoBytes = new byte[20];
                 simNoBuf.readBytes(simNoBytes, 0, 20);
-                String simNo = DatatypeConverter.printHexBinary(simNoBytes);
+                String simNo =ByteBufUtil.hexDump(simNoBytes) ;
                 if ("38393836".equals(simNo.substring(0, 8))) {
                     log.info("decode:channel = [{}], simNo = [{}]", channelHandlerContext.channel(), simNo);
                     channelHandlerContext.channel().attr(simAttr).setIfAbsent(simNo);
