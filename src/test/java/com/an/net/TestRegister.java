@@ -29,6 +29,7 @@ public class TestRegister {
 
     @Test
     public void test8(){
+        //注册
         String hexString = "444e590f0057a4d804a000207e02021931066304";
         UDianPackage msg = UDianPackage.buildFromHexString(hexString);
         ByteBuf out = Unpooled.buffer();

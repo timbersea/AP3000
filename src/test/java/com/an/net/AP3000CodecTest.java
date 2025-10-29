@@ -1,17 +1,21 @@
 package com.an.net;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.LoggerFactory;
 
 import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.StandardCharsets;
 
+@Slf4j
 public class AP3000CodecTest {
     EmbeddedChannel channel;
     @Before
@@ -30,18 +34,17 @@ public class AP3000CodecTest {
 
     @Test
     public void testEncode() {
-        String hexString = "444E591D003B37AB04B900017E008C080200030000E40000003B0229070220006D05";
+        String hexString = "444E590A003B37AB04B9002000EF02";
 
         UDianPackage uDianPackage = UDianPackage.buildFromHexString(hexString);
+        log.info("{}",uDianPackage);
 
         //模拟写出数据
         org.junit.Assert.assertTrue(channel.writeOutbound(uDianPackage));
         channel.flush();
         org.junit.Assert.assertTrue(channel.finish());
         ByteBuf o = channel.readOutbound();
-        byte[] bytes = new byte[o.readableBytes()];
-        o.readBytes(bytes);
-        Assert.assertEquals(hexString, DatatypeConverter.printHexBinary(bytes));
+        Assert.assertTrue(hexString.equalsIgnoreCase(ByteBufUtil.hexDump(o)));
     }
 
     @Test
@@ -349,6 +352,7 @@ public class AP3000CodecTest {
 
     @Test
     public void test8(){
+        //PortChargePowerHeatBeat
         String hexString = "444E5932003B37AB040A00060101100E300001E803B0042003E803201909011800001300303801020304050100E8039808C7015500DA08";
         UDianPackage msg = UDianPackage.buildFromHexString(hexString);
         ByteBuf out = Unpooled.buffer();
@@ -366,6 +370,7 @@ public class AP3000CodecTest {
     }
     @Test
     public void test9(){
+        //SettleConsume
         String hexString="444E5928003B37AB04010003100EE80330000101000000000120190901180000130030380102030405E8034405";
         UDianPackage msg = UDianPackage.buildFromHexString(hexString);
         ByteBuf out = Unpooled.buffer();

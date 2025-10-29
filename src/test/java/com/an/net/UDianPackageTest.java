@@ -2,6 +2,8 @@ package com.an.net;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.Unpooled;
 import junit.framework.Assert;
 import junit.framework.TestCase;
 import org.slf4j.Logger;
@@ -27,7 +29,7 @@ public class UDianPackageTest extends TestCase {
         msg.setPhysicalId(78329659);
         msg.setMessageId((short) 185);
         msg.setCommand((byte) 1);
-        msg.setData(DatatypeConverter.parseHexBinary("7E008C080200030000E40000003B022907022000"));
+        msg.setData(Unpooled.buffer().writeBytes( ByteBufUtil.decodeHexDump("7E008C080200030000E40000003B022907022000")));
         msg.setCheck((short) 1389);
 
         out.writeBytes(msg.getDny().getBytes(StandardCharsets.UTF_8));

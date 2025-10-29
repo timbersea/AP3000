@@ -10,11 +10,11 @@ import io.netty.util.AttributeKey;
 import io.netty.util.ReferenceCountUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * AP3000的codec实现
@@ -24,10 +24,20 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
 
     private static final AttributeKey<String> simAttr = AttributeKey.newInstance("simNo");
 
+    // 定义协议常量（根据实际协议调整含义）
+    private static final int HEADER_SKIP_BYTES = 3; // 需跳过的头部字节数
+    private static final int PHYSICAL_ID_LENGTH = 4; // 物理ID长度（字节）
+    private static final int MESSAGE_ID_LENGTH = 2; // 消息ID长度（字节）
+    private static final int COMMAND_LENGTH = 1; // 命令字段长度（字节）
+    private static final int CHECK_LENGTH = 2; // 校验值长度（字节）
+    private static final int FRAME_LENGTH = 2; // 消息长度丙个字节（字节）
+    public static final int SIM_CARD_LENGTH=20;
+
 
     @Override
     protected void encode(ChannelHandlerContext channelHandlerContext, UDianPackage msg, ByteBuf out) throws Exception {
-        log.debug("send to pileCode:[{}] msg:[{}]", channelHandlerContext.channel().attr(GlobalContext.pileCodeAttr), msg);
+        log.debug("send to pileCode:[{}] msg:[{}]", channelHandlerContext.channel().attr(GlobalContext.pileCodeAttr),
+                msg);
         out.writeBytes(msg.getDny().getBytes(StandardCharsets.UTF_8));
         if (msg.getLength() > 256) {
             throw new TooLongFrameException("length must less than 256 " + msg.toHexString());
@@ -44,15 +54,15 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
     protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf, List<Object> list) throws Exception {
         //这是通信模块每次连上socket时，都会（第一时间）发送一次sim卡号给socket
         if (channelHandlerContext.channel().attr(simAttr).get() == null) {
-            if (byteBuf.readableBytes() >= 20) {
-                ByteBuf simNoBuf = byteBuf.slice(0, 20);
-                byte[] simNoBytes = new byte[20];
-                simNoBuf.readBytes(simNoBytes, 0, 20);
-                String simNo =ByteBufUtil.hexDump(simNoBytes) ;
+            if (byteBuf.readableBytes() >= SIM_CARD_LENGTH) {
+                byteBuf.markReaderIndex();
+                ByteBuf simCardNo = byteBuf.readBytes(SIM_CARD_LENGTH);
+                String simNo = ByteBufUtil.hexDump(simCardNo);
                 if ("38393836".equals(simNo.substring(0, 8))) {
                     log.info("decode:channel = [{}], simNo = [{}]", channelHandlerContext.channel(), simNo);
                     channelHandlerContext.channel().attr(simAttr).setIfAbsent(simNo);
-                    byteBuf.skipBytes(20);
+                }else {
+                    byteBuf.resetReaderIndex();
                 }
             }
         } else {
@@ -79,17 +89,18 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
     }
 
     public static UDianPackage getYouDianPackage(ByteBuf decoded) {
+        // 保存初始读指针位置，便于异常时定位问题
+        int initialReaderIndex = decoded.readerIndex();
         ByteBuf data = null;
         try {
-            byte[] toCalCheck = new byte[decoded.readableBytes() - 2];//去掉最后两字节的检校值后的数据参与计算校验值
+            byte[] toCalCheck = new byte[decoded.readableBytes() - CHECK_LENGTH];//去掉最后两字节的检校值后的数据参与计算校验值
             decoded.getBytes(0, toCalCheck, 0, toCalCheck.length);
-            decoded.skipBytes(3);
+            decoded.skipBytes(HEADER_SKIP_BYTES);
             int length = decoded.readUnsignedShortLE();
             int physicalId = decoded.readIntLE();
             int messageId = decoded.readUnsignedShortLE();
             int command = decoded.readByte();
-            data = decoded.readBytes(length - 4 - 2 - 1 - 2);
-            data.retain();
+            data = decoded.readBytes(length - PHYSICAL_ID_LENGTH - MESSAGE_ID_LENGTH - COMMAND_LENGTH - FRAME_LENGTH);
             int check = decoded.readUnsignedShortLE();
 
             UDianPackage uDianPackage = new UDianPackage();
@@ -98,24 +109,20 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
             uDianPackage.setPhysicalId(physicalId);
             uDianPackage.setMessageId((short) messageId);
             uDianPackage.setCommand(command);
-            byte[] bytes = new byte[length - 4 - 2 - 1 - 2];
-            data.readBytes(bytes);
-            uDianPackage.setData(bytes);
+            uDianPackage.setData(data);
             uDianPackage.setCheck((short) check);
 
             int calCheckValue = calCheck(toCalCheck);
-            if (calCheckValue != check) {
-                log.debug("cal check value :[{}],receive checkValue[{}]", calCheckValue, check);
-                throw new IllegalArgumentException("calCheckValue: " + calCheckValue + " not equals to check: " + check);
+            if (!Objects.equals(calCheckValue, check)) {
+                throw new IllegalArgumentException(String.format("pileCode=%d,Check value mismatch: calculated=%d, " +
+                        "received=%d (offset=%d),frame data=%s", UDianPackage.physicalId2PileCode(physicalId),
+                        calCheckValue, check, initialReaderIndex, ByteBufUtil.hexDump(decoded)));
             }
             return uDianPackage;
         } catch (Exception e) {
             throw e;
         } finally {
             ReferenceCountUtil.release(decoded);
-            if (data != null) {
-                ReferenceCountUtil.release(data);
-            }
         }
     }
 

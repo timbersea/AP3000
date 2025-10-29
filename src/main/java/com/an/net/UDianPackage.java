@@ -1,9 +1,9 @@
 package com.an.net;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.util.ReferenceCountUtil;
-import lombok.Data;
 
 import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.StandardCharsets;
@@ -12,6 +12,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class UDianPackage {
     private static final AtomicInteger seq = new AtomicInteger();
 
+    /**
+     * 固定标识包头
+     */
     private String dny = "DNY";
     private short length;
     private int physicalId;
@@ -19,12 +22,15 @@ public class UDianPackage {
     private short messageId;
     private int command;//协议中实际占一个字节
 
-    private byte[] data;
+    /**
+     * 业务数据
+     */
+    private ByteBuf data;
 
     private short check;
 
     public short calLength() {
-        return (short) (4 + 2 + 1 + data.length + 2);
+        return (short) (4 + 2 + 1 + data.readableBytes() + 2);
     }
 
     public int getCheck() {
@@ -80,11 +86,11 @@ public class UDianPackage {
         this.command = command;
     }
 
-    public byte[] getData() {
+    public ByteBuf getData() {
         return data;
     }
 
-    public void setData(byte[] data) {
+    public void setData(ByteBuf data) {
         this.data = data;
     }
 
@@ -104,7 +110,7 @@ public class UDianPackage {
                 ", physicalId=" + physicalId2PileCode() +
                 ", messageId=" + messageId +
                 ", command=0x" + Integer.toHexString(command) +
-                ", data=" + DatatypeConverter.printHexBinary(data) +
+                ", data=" + ByteBufUtil.hexDump(data) +
                 ", check=" + check +
                 '}';
     }
@@ -128,7 +134,7 @@ public class UDianPackage {
     public UDianPackage() {
     }
 
-    public UDianPackage(int pileCode, byte command, byte[] data) {
+    public UDianPackage(int pileCode, byte command, ByteBuf data) {
         this.dny = "DNY";
         this.pileCode = pileCode;
         this.setMessageId(generateMessageId());
@@ -137,7 +143,7 @@ public class UDianPackage {
         this.setLength((calLength()));
     }
 
-    public UDianPackage getReply(byte[] data) {
+    public UDianPackage getReply(ByteBuf data) {
         UDianPackage uDianPackage = new UDianPackage();
         uDianPackage.dny = this.dny;
         uDianPackage.physicalId = this.physicalId;
@@ -150,13 +156,25 @@ public class UDianPackage {
     }
 
     public static UDianPackage buildFromHexString(String hexString) {
-        ByteBuf buffer = Unpooled.buffer(hexString.length() / 2);
-        buffer.writeBytes(DatatypeConverter.parseHexBinary(hexString));
+        byte[] bytes = ByteBufUtil.decodeHexDump(hexString);
+        ByteBuf buffer = Unpooled.buffer();
+        buffer.writeBytes(bytes);
         return AP3000Codec.getYouDianPackage(buffer);
     }
 
     public static short generateMessageId() {
         return (short) (seq.getAndIncrement() & 0x07FFF);
+    }
+
+
+    /**
+     * 通用长度为1，内容为0的回复消息
+     * @return
+     */
+    public static final ByteBuf byteBufZero(){
+        ByteBuf reply = Unpooled.buffer(1);
+        reply.writeByte(0);
+        return reply;
     }
 
     /**
@@ -167,6 +185,9 @@ public class UDianPackage {
     public  final int physicalId2PileCode() {
         int pileCode = physicalId & 0x00FFFFFF;
         return pileCode;
+    }
+    public static int physicalId2PileCode(int physicalId){
+        return physicalId & 0x00FFFFFF;
     }
     /**
      * pileCode转physicalId
