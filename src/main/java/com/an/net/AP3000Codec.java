@@ -80,7 +80,7 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
                     byteBuf.skipBytes(4);
                 }
             }
-            ByteBuf decoded = decode(byteBuf);
+            ByteBuf decoded = readFrame(byteBuf);
             if (decoded != null) {
                 UDianPackage uDianPackage = getYouDianPackage(decoded);
                 list.add(uDianPackage);
@@ -147,7 +147,13 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
         return calCheck(toCalCheck);
     }
 
-    private ByteBuf decode(ByteBuf in) throws Exception {
+    /**
+     * 从字节流串读取一帧的数据，一个完整的数据包
+     * @param in
+     * @return
+     * @throws Exception
+     */
+    private ByteBuf readFrame(ByteBuf in) throws Exception {
         in.markReaderIndex();
         if (in.readableBytes() < 12) {
             return null;
