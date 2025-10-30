@@ -26,7 +26,10 @@ TCP 9122 http端口号，context-path: /iotApi
 - service 业务层，暴露硬件控制指令方法
 
 ### 依赖库见pom文件
-mvn clean install -DskipTests=true
+- 执行单元测试 
+``` mvn clean test```
+- 生成单元测试报告
+``` mvn surefire-report:report```
 
 
 

@@ -4,9 +4,7 @@ import com.an.net.UDianPackage;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
-import io.netty.util.CharsetUtil;
-import junit.framework.TestCase;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +12,7 @@ import javax.xml.bind.DatatypeConverter;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 
-public class SimpleTest extends TestCase {
+public class SimpleTest {
     private static final Logger log = LoggerFactory.getLogger(SimpleTest.class);
 
     @Test
