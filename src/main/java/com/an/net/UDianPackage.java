@@ -10,6 +10,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class UDianPackage {
+    // 定义协议常量（根据实际协议调整含义）
+    public static final int HEADER_SKIP_BYTES = 3; // 需跳过的头部字节数
+    public static final int PHYSICAL_ID_LENGTH = 4; // 物理ID长度（字节）
+    public static final int MESSAGE_ID_LENGTH = 2; // 消息ID长度（字节）
+    public static final int COMMAND_LENGTH = 1; // 命令字段长度（字节）
+    public static final int CHECK_LENGTH = 2; // 校验值长度（字节）
+    public static final int FRAME_LENGTH = 2; // 消息长度丙个字节（字节）
+    public static final int SIM_CARD_LENGTH = 20;
+    public static final int MAX_LENGTH = 256;
     private static final AtomicInteger seq = new AtomicInteger();
 
     /**

@@ -16,13 +16,6 @@ public class SimpleTest {
     private static final Logger log = LoggerFactory.getLogger(SimpleTest.class);
 
     @Test
-    public void test0(){
-        for (int i = 0; i < 100; i++) {
-            String format = String.format("%016d", Long.parseLong("1726839741913346048"));
-            log.info("test0:{}",format);
-        }
-    }
-    @Test
     public void test1(){
         byte[] bytes = "134.175.12.227".getBytes(StandardCharsets.UTF_8);
         byte[] bytes1 = new byte[46];

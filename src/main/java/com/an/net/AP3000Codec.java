@@ -16,6 +16,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 
+import static com.an.net.UDianPackage.*;
+
 /**
  * AP3000的codec实现
  */
@@ -24,14 +26,7 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
 
     private static final AttributeKey<String> simAttr = AttributeKey.newInstance("simNo");
 
-    // 定义协议常量（根据实际协议调整含义）
-    private static final int HEADER_SKIP_BYTES = 3; // 需跳过的头部字节数
-    private static final int PHYSICAL_ID_LENGTH = 4; // 物理ID长度（字节）
-    private static final int MESSAGE_ID_LENGTH = 2; // 消息ID长度（字节）
-    private static final int COMMAND_LENGTH = 1; // 命令字段长度（字节）
-    private static final int CHECK_LENGTH = 2; // 校验值长度（字节）
-    private static final int FRAME_LENGTH = 2; // 消息长度丙个字节（字节）
-    public static final int SIM_CARD_LENGTH=20;
+
 
 
     @Override
@@ -61,7 +56,7 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
                 if ("38393836".equals(simNo.substring(0, 8))) {
                     log.info("decode:channel = [{}], simNo = [{}]", channelHandlerContext.channel(), simNo);
                     channelHandlerContext.channel().attr(simAttr).setIfAbsent(simNo);
-                }else {
+                } else {
                     byteBuf.resetReaderIndex();
                 }
             }
@@ -115,7 +110,7 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
             int calCheckValue = calCheck(toCalCheck);
             if (!Objects.equals(calCheckValue, check)) {
                 throw new IllegalArgumentException(String.format("pileCode=%d,Check value mismatch: calculated=%d, " +
-                        "received=%d (offset=%d),frame data=%s", UDianPackage.physicalId2PileCode(physicalId),
+                                "received=%d (offset=%d),frame data=%s", UDianPackage.physicalId2PileCode(physicalId),
                         calCheckValue, check, initialReaderIndex, ByteBufUtil.hexDump(decoded)));
             }
             return uDianPackage;
@@ -149,28 +144,25 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
 
     /**
      * 从字节流串读取一帧的数据，一个完整的数据包
+     *
      * @param in
      * @return
      * @throws Exception
      */
     private ByteBuf readFrame(ByteBuf in) throws Exception {
         in.markReaderIndex();
-        if (in.readableBytes() < 12) {
+        if (in.readableBytes() < HEADER_SKIP_BYTES + FRAME_LENGTH + PHYSICAL_ID_LENGTH + MESSAGE_ID_LENGTH + COMMAND_LENGTH) {
             return null;
-        } else if (in.readableBytes() > 256) {
-            ReferenceCountUtil.release(in);
-            throw new TooLongFrameException();
         } else {
-            ByteBuf byteBuf = in.slice(0, 12);
-            byteBuf.retain();
-            byteBuf.skipBytes(3);
-            int length = byteBuf.readUnsignedShortLE();
-            ReferenceCountUtil.release(byteBuf);
-            if (in.readableBytes() < (length + 3)) {
+            in.skipBytes(HEADER_SKIP_BYTES);
+            short length = in.readShortLE();
+            if(in.readableBytes()<length){
                 in.resetReaderIndex();
                 return null;
+            }else {
+                in.resetReaderIndex();
+                return in.readBytes(HEADER_SKIP_BYTES+FRAME_LENGTH+length);
             }
-            return in.readBytes(length + 3 + 2);
         }
     }
 }
