@@ -22,6 +22,7 @@ public class SimpleTest {
             log.info("test0:{}",format);
         }
     }
+    @Test
     public void test1(){
         byte[] bytes = "134.175.12.227".getBytes(StandardCharsets.UTF_8);
         byte[] bytes1 = new byte[46];
@@ -32,7 +33,7 @@ public class SimpleTest {
     public void test2(){
         UDianPackage uDianPackage = new UDianPackage();
         //高1个字节04表示双路，低3字节0xD728D6=14100694，和设备二维码下面的数字对应。
-        int physicalId = UDianPackage.pileCode2PhysicalId(14100694, (byte) 04);
+        int physicalId = UDianPackage.pileCode2PhysicalId(14100694, (byte) 0x04);
         uDianPackage.setPhysicalId(physicalId);
         log.info("{}",uDianPackage.getPileCode());
         //4d728d6

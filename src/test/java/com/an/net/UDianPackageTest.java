@@ -5,6 +5,7 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 public class UDianPackageTest {
     private static final Logger log = LoggerFactory.getLogger(UDianPackageTest.class);
 
+    @Test
     public void testBuildFromHexString() {
         UDianPackage uDianPackage = UDianPackage.buildFromHexString(
                 "444E591D003B37AB04B900017E008C080200030000E40000003B0229070220006D05");
@@ -22,6 +24,7 @@ public class UDianPackageTest {
                 uDianPackage.toHexString());
     }
 
+    @Test
     public void testEncode() {
         ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
         UDianPackage msg = new UDianPackage();
@@ -48,8 +51,9 @@ public class UDianPackageTest {
 
     }
 
+    @Test
     public void testGenerateMessageId() {
-        for (int i = 0; i < 7000; i++) {
+        for (int i = 0; i < 200; i++) {
             log.info("testGenerateMessageId:[{}]", UDianPackage.generateMessageId());
         }
     }

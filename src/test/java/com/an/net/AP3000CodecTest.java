@@ -96,6 +96,7 @@ public class AP3000CodecTest {
 
         channel.finish();
         UDianPackage o = channel.readInbound();
+        log.info("{}",o);
     }
 
     @Test
@@ -389,5 +390,6 @@ public class AP3000CodecTest {
         channel.writeInbound(out);
         channel.flush();
         Object o = channel.readInbound();
+        log.info("{}",o);
     }
 }
