@@ -9,6 +9,8 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.TimeUnit;
+
 import static com.an.net.GlobalContext.pileCodeAttr;
 import static com.an.net.UDianPackage.byteBufZero;
 
@@ -41,17 +43,17 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     heatBeat.setPortNum(data.readByte());
                     byte portNum = heatBeat.getPortNum();
                     byte[] portStatus = new byte[portNum];
-                    short [] currentPower = new short[portNum];;
-                    short [] peakPower = new short[portNum * 2];
+                    short[] currentPower = new short[portNum];
+                    short[] peakPower = new short[portNum * 2];
 
                     for (int i = 0; i < portNum; i++) {
                         portStatus[i] = data.readByte();
                     }
                     for (int i = 0; i < portNum; i++) {
-                        currentPower[i]=(data.readShortLE());
+                        currentPower[i] = (data.readShortLE());
                     }
                     for (int i = 0; i < portNum; i++) {
-                        peakPower[i]=(data.readShortLE());
+                        peakPower[i] = (data.readShortLE());
                     }
 
                     heatBeat.setPortStatus(portStatus);
@@ -112,7 +114,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                 }
                 //获取时间
                 case 0x22: {
-                    Integer number = (int) (System.currentTimeMillis() / 1000);
+                    int number = (int) (System.currentTimeMillis() / 1000);
                     ByteBuf byteArray = Unpooled.buffer(4);
                     byteArray.writeByte(number & 0x000000FF);
                     byteArray.writeByte(number >> 8);
@@ -129,7 +131,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     swipingCard.setCardType(data.readByte());
                     swipingCard.setPort(data.readByte());
                     swipingCard.setBalance(data.readShortLE());
-                    if(data.readableBytes()>=4){
+                    if (data.readableBytes() >= 4) {
                         swipingCard.setTimestamp(data.readIntLE());
                     }
                     swipingCard.setCard2Length(data.readByte());
@@ -210,7 +212,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     portChargePowerHeatBeat.setElectricity(data.readShortLE());
                     portChargePowerHeatBeat.setEnvironmentTemperature(data.readByte());
                     portChargePowerHeatBeat.setPortTemperature(data.readByte());
-                    if(data.readableBytes()>=4){
+                    if (data.readableBytes() >= 4) {
                         portChargePowerHeatBeat.setTimestamp(data.readIntLE());
                     }
                     if (data.readableBytes() >= 2) {
@@ -257,7 +259,8 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     long orderNo = data.readLongLE();
                     byte port = data.readByte();
                     byte waitPort = data.readByte();
-                    log.info("0x82 :response:[{}] orderNo:[{}] port:[{}] waitPort:[{}]", response, orderNo, port, waitPort);
+                    log.info("0x82 :response:[{}] orderNo:[{}] port:[{}] waitPort:[{}]", response, orderNo, port,
+                            waitPort);
                     break;
                 }
                 default: {
@@ -274,15 +277,15 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        log.debug("{}",ctx);
+        log.debug("{}", ctx);
         super.channelActive(ctx);
         ctx.channel().attr(GlobalContext.activeTimestamp).setIfAbsent(System.currentTimeMillis());
-//        ctx.executor().schedule(() -> {
-//            if(ctx.channel().attr(GlobalContext.pileCodeAttr).get()==null){
-//                log.warn("ctx :[{}] no physicalId after connected for 30 seconds,will be close", ctx);
-//                ctx.close();
-//            }
-//        },30, TimeUnit.SECONDS);
+                ctx.executor().schedule(() -> {
+                    if(ctx.channel().attr(GlobalContext.pileCodeAttr).get()==null){
+                        log.warn("ctx :[{}] no physicalId after connected for 30 seconds,will be close", ctx);
+                        ctx.close();
+                    }
+                },30, TimeUnit.SECONDS);
     }
 
     @Override
@@ -297,8 +300,8 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        log.error("exceptionCaught:ctx = [{}], cause = [{}]", ctx, cause);
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        log.error("exceptionCaught:ctx = [ {} ], cause = [{}]", ctx, cause);
         Integer pileCode = ctx.channel().attr(pileCodeAttr).get();
         if (pileCode != null) {
             log.info("offline: pileCode:[{}]  channelHandlerContext = [{}]", pileCode, ctx);

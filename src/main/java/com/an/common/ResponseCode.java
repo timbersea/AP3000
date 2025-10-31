@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ResponseCode {
-    private static Map<Integer, String> startChargeResponse = new HashMap<>();
+    private static final Map<Integer, String> startChargeResponse = new HashMap<>();
 
     static {
 
@@ -55,7 +55,7 @@ public class ResponseCode {
     }
 
     public static String getStopReasonDescription(byte stopReason) {
-        return stopReasonDescription.get(Integer.valueOf(stopReason));
+        return stopReasonDescription.get((int) stopReason);
     }
 
 }

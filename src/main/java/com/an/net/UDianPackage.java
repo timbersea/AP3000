@@ -177,10 +177,10 @@ public class UDianPackage {
 
 
     /**
-     * 通用长度为1，内容为0的回复消息
-     * @return
+     *
+     * @return  通用长度为1，内容为0的回复消息
      */
-    public static final ByteBuf byteBufZero(){
+    public static ByteBuf byteBufZero(){
         ByteBuf reply = Unpooled.buffer(1);
         reply.writeByte(0);
         return reply;
@@ -189,11 +189,10 @@ public class UDianPackage {
     /**
      * physicalId映射成业务系统中的pileCode,因为设备传上的四个字节是由 deviceType的识别码和设备编号组成的，
      * 所以需要做额外的解析
-     * @return
+     * @return  当前package的pileCode
      */
     public  final int physicalId2PileCode() {
-        int pileCode = physicalId & 0x00FFFFFF;
-        return pileCode;
+        return physicalId & 0x00FFFFFF;
     }
     public static int physicalId2PileCode(int physicalId){
         return physicalId & 0x00FFFFFF;

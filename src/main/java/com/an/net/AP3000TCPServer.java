@@ -36,7 +36,7 @@ public class AP3000TCPServer implements CommandLineRunner {
                 .channel(NioServerSocketChannel.class) // (3)
                 .childHandler(new ChannelInitializer<SocketChannel>() { // (4)
                     @Override
-                    public void initChannel(SocketChannel ch) throws Exception {
+                    public void initChannel(SocketChannel ch) {
                         ch.pipeline().addLast(new LoggingHandler(LogLevel.DEBUG));
                         ch.pipeline().addLast(new AP3000Codec())
                                 .addLast(serviceGroup,messageHandler);

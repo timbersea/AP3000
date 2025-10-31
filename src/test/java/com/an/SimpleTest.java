@@ -34,10 +34,10 @@ public class SimpleTest {
 
 
         // 1. 创建ByteBuf并设置为小端序
-        ByteBuf buf = Unpooled.buffer(4).order(ByteOrder.LITTLE_ENDIAN);
+        ByteBuf buf = Unpooled.buffer(4);
 
         // 2. 按小端序写入int（4字节）
-        buf.writeInt(physicalId);
+        buf.writeIntLE(physicalId);
 
         String s = ByteBufUtil.hexDump(buf);
         log.info(s);

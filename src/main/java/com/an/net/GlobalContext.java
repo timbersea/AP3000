@@ -76,9 +76,7 @@ public class GlobalContext {
             log.info("request to pileCode: [{}] messageId [{}]  wait for response", uDianPackage.getPileCode(),
                     uDianPackage.getMessageId());
             return uDianPackageCompletableFuture.get(5, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e.getMessage());
-        } catch (ExecutionException e) {
+        } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e.getMessage());
         } catch (TimeoutException e) {
             throw new RuntimeException(uDianPackage.getPileCode() + " response timeout for 3 seconds");

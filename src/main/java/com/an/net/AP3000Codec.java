@@ -11,7 +11,6 @@ import io.netty.util.ReferenceCountUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
@@ -25,12 +24,12 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
     private static final Logger log = LoggerFactory.getLogger(AP3000Codec.class);
 
     private static final AttributeKey<String> simAttr = AttributeKey.newInstance("simNo");
+    public static final String LINK = "6C696E6B";
 
-
-
+    public static final int LINK_LENGTH = 4;
 
     @Override
-    protected void encode(ChannelHandlerContext channelHandlerContext, UDianPackage msg, ByteBuf out) throws Exception {
+    protected void encode(ChannelHandlerContext channelHandlerContext, UDianPackage msg, ByteBuf out) {
         log.debug("send to pileCode:[{}] msg:[{}]", channelHandlerContext.channel().attr(GlobalContext.pileCodeAttr),
                 msg);
         out.writeBytes(msg.getDny().getBytes(StandardCharsets.UTF_8));
@@ -46,7 +45,7 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
     }
 
     @Override
-    protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf, List<Object> list) throws Exception {
+    protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf, List<Object> list) {
         //这是通信模块每次连上socket时，都会（第一时间）发送一次sim卡号给socket
         if (channelHandlerContext.channel().attr(simAttr).get() == null) {
             if (byteBuf.readableBytes() >= SIM_CARD_LENGTH) {
@@ -62,17 +61,14 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
             }
         } else {
             //{6C 69 6E 6B }link是模块心跳包，是防中国移动踢掉网的，长度固定为4字节，（服务器无需应答）。
-            if (byteBuf.readableBytes() >= 4) {
-                ByteBuf linkBuf = byteBuf.slice(0, 4);
-                byte[] linkByte = new byte[4];
-                linkBuf.readBytes(linkByte);
-                String link = DatatypeConverter.printHexBinary(linkByte);
-                if ("6C696E6B".equals(link)) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("pileCode = [{}],read link [{}]",
-                                channelHandlerContext.channel().attr(GlobalContext.pileCodeAttr), link);
-                    }
-                    byteBuf.skipBytes(4);
+            if (byteBuf.readableBytes() >= LINK_LENGTH) {
+                byteBuf.markReaderIndex();
+                String link = ByteBufUtil.hexDump(byteBuf.readBytes(LINK_LENGTH));
+                if (LINK.equalsIgnoreCase(link)) {
+                    log.debug("pileCode = [{}],read link [{}]",
+                            channelHandlerContext.channel().attr(GlobalContext.pileCodeAttr), link);
+                } else {
+                    byteBuf.resetReaderIndex();
                 }
             }
             ByteBuf decoded = readFrame(byteBuf);
@@ -86,7 +82,7 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
     public static UDianPackage getYouDianPackage(ByteBuf decoded) {
         // 保存初始读指针位置，便于异常时定位问题
         int initialReaderIndex = decoded.readerIndex();
-        ByteBuf data = null;
+        ByteBuf data;
         try {
             byte[] toCalCheck = new byte[decoded.readableBytes() - CHECK_LENGTH];//去掉最后两字节的检校值后的数据参与计算校验值
             decoded.getBytes(0, toCalCheck, 0, toCalCheck.length);
@@ -109,13 +105,9 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
 
             int calCheckValue = calCheck(toCalCheck);
             if (!Objects.equals(calCheckValue, check)) {
-                throw new IllegalArgumentException(String.format("pileCode=%d,Check value mismatch: calculated=%d, " +
-                                "received=%d (offset=%d),frame data=%s", UDianPackage.physicalId2PileCode(physicalId),
-                        calCheckValue, check, initialReaderIndex, ByteBufUtil.hexDump(decoded)));
+                throw new IllegalArgumentException(String.format("pileCode=%d,Check value mismatch: calculated=%d, " + "received=%d (offset=%d),frame data=%s", UDianPackage.physicalId2PileCode(physicalId), calCheckValue, check, initialReaderIndex, ByteBufUtil.hexDump(decoded)));
             }
             return uDianPackage;
-        } catch (Exception e) {
-            throw e;
         } finally {
             ReferenceCountUtil.release(decoded);
         }
@@ -145,23 +137,22 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
     /**
      * 从字节流串读取一帧的数据，一个完整的数据包
      *
-     * @param in
-     * @return
-     * @throws Exception
+     * @param in 字节流
+     * @return 完整的一个数据帧
      */
-    private ByteBuf readFrame(ByteBuf in) throws Exception {
+    private ByteBuf readFrame(ByteBuf in) {
         in.markReaderIndex();
         if (in.readableBytes() < HEADER_SKIP_BYTES + FRAME_LENGTH + PHYSICAL_ID_LENGTH + MESSAGE_ID_LENGTH + COMMAND_LENGTH) {
             return null;
         } else {
             in.skipBytes(HEADER_SKIP_BYTES);
             short length = in.readShortLE();
-            if(in.readableBytes()<length){
+            if (in.readableBytes() < length) {
                 in.resetReaderIndex();
                 return null;
-            }else {
+            } else {
                 in.resetReaderIndex();
-                return in.readBytes(HEADER_SKIP_BYTES+FRAME_LENGTH+length);
+                return in.readBytes(HEADER_SKIP_BYTES + FRAME_LENGTH + length);
             }
         }
     }
