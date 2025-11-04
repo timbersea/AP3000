@@ -20,7 +20,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(MessageHandler.class);
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, UDianPackage msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, UDianPackage msg) {
         int pileCode = msg.physicalId2PileCode();
         ctx.channel().attr(pileCodeAttr).setIfAbsent(pileCode);
         ctx.channel().attr(GlobalContext.deviceTypeAttr).setIfAbsent(msg.physicalId2Type());

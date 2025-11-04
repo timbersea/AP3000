@@ -27,8 +27,7 @@ public class AP3000Service {
     public ByteBuf send(int pileCode, byte command, ByteBuffer data) {
         UDianPackage uDianPackage = new UDianPackage(pileCode, command, data.array());
         UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
-        ByteBuf responseData = Unpooled.buffer(response.getData().length).writeBytes(response.getData());
-        return responseData;
+        return Unpooled.buffer(response.getData().length).writeBytes(response.getData());
     }
 
     /**
