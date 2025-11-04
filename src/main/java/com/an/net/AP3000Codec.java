@@ -82,7 +82,7 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
     public static UDianPackage getYouDianPackage(ByteBuf decoded) {
         // 保存初始读指针位置，便于异常时定位问题
         int initialReaderIndex = decoded.readerIndex();
-        ByteBuf data;
+        byte[] data;
         try {
             byte[] toCalCheck = new byte[decoded.readableBytes() - CHECK_LENGTH];//去掉最后两字节的检校值后的数据参与计算校验值
             decoded.getBytes(0, toCalCheck, 0, toCalCheck.length);
@@ -91,7 +91,7 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
             int physicalId = decoded.readIntLE();
             int messageId = decoded.readUnsignedShortLE();
             int command = decoded.readByte();
-            data = decoded.readBytes(length - PHYSICAL_ID_LENGTH - MESSAGE_ID_LENGTH - COMMAND_LENGTH - FRAME_LENGTH);
+            data = decoded.readBytes(length - PHYSICAL_ID_LENGTH - MESSAGE_ID_LENGTH - COMMAND_LENGTH - FRAME_LENGTH).array();
             int check = decoded.readUnsignedShortLE();
 
             UDianPackage uDianPackage = new UDianPackage();

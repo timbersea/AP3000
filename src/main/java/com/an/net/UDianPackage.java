@@ -34,12 +34,17 @@ public class UDianPackage {
     /**
      * 业务数据
      */
-    private ByteBuf data;
+    private byte[] data;
 
     private short check;
 
-    public short calLength() {
-        return (short) (4 + 2 + 1 + data.readableBytes() + 2);
+    public UDianPackage(int pileCode, byte command, byte[] data) {
+        this.dny = "DNY";
+        this.pileCode = pileCode;
+        this.setMessageId(generateMessageId());
+        this.setCommand(command);
+        this.setData(data);
+        this.setLength((calLength()));
     }
 
     public int getCheck() {
@@ -95,12 +100,16 @@ public class UDianPackage {
         this.command = command;
     }
 
-    public ByteBuf getData() {
-        return data;
+    /**
+     *
+     * @return  通用长度为1，内容为0的回复消息
+     */
+    public static byte[] byteBufZero() {
+        return new byte[]{0};
     }
 
-    public void setData(ByteBuf data) {
-        this.data = data;
+    public short calLength() {
+        return (short) (PHYSICAL_ID_LENGTH + MESSAGE_ID_LENGTH + COMMAND_LENGTH + data.length + CHECK_LENGTH);
     }
 
     public void setCheck(short check) {
@@ -143,25 +152,12 @@ public class UDianPackage {
     public UDianPackage() {
     }
 
-    public UDianPackage(int pileCode, byte command, ByteBuf data) {
-        this.dny = "DNY";
-        this.pileCode = pileCode;
-        this.setMessageId(generateMessageId());
-        this.setCommand(command);
-        this.setData(data);
-        this.setLength((calLength()));
+    public byte[] getData() {
+        return data;
     }
 
-    public UDianPackage getReply(ByteBuf data) {
-        UDianPackage uDianPackage = new UDianPackage();
-        uDianPackage.dny = this.dny;
-        uDianPackage.physicalId = this.physicalId;
-        uDianPackage.setMessageId(this.messageId);
-        uDianPackage.setCommand(this.command);
-        uDianPackage.setData(data);
-        uDianPackage.setLength((uDianPackage.calLength()));
-        uDianPackage.setCheck((short)AP3000Codec.calCheck(uDianPackage));
-        return uDianPackage;
+    public void setData(byte[] data) {
+        this.data = data;
     }
 
     public static UDianPackage buildFromHexString(String hexString) {
@@ -175,15 +171,22 @@ public class UDianPackage {
         return (short) (seq.getAndIncrement() & 0x07FFF);
     }
 
-
     /**
+     * 生成当前消息的回复消息
      *
-     * @return  通用长度为1，内容为0的回复消息
+     * @param data 业务数据
+     * @return
      */
-    public static ByteBuf byteBufZero(){
-        ByteBuf reply = Unpooled.buffer(1);
-        reply.writeByte(0);
-        return reply;
+    public UDianPackage getReply(byte[] data) {
+        UDianPackage uDianPackage = new UDianPackage();
+        uDianPackage.dny = this.dny;
+        uDianPackage.physicalId = this.physicalId;
+        uDianPackage.setMessageId(this.messageId);
+        uDianPackage.setCommand(this.command);
+        uDianPackage.setData(data);
+        uDianPackage.setLength((uDianPackage.calLength()));
+        uDianPackage.setCheck((short)AP3000Codec.calCheck(uDianPackage));
+        return uDianPackage;
     }
 
     /**

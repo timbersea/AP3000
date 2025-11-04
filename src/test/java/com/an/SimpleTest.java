@@ -1,5 +1,6 @@
 package com.an;
 
+import com.an.dto.ChargeOrderConfirm;
 import com.an.net.UDianPackage;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
@@ -9,8 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.xml.bind.DatatypeConverter;
-import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 
 public class SimpleTest {
     private static final Logger log = LoggerFactory.getLogger(SimpleTest.class);
@@ -43,5 +44,13 @@ public class SimpleTest {
         log.info(s);
     }
 
+    @Test
+    public void test() {
+        ArrayList<Object> objects = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            ChargeOrderConfirm chargeOrderConfirm = new ChargeOrderConfirm();
+            objects.add(chargeOrderConfirm);
+        }
+    }
 
 }

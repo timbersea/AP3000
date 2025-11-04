@@ -28,7 +28,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
         GlobalContext.completeResponse(msg.getMessageId(), msg);
 
         int command = msg.getCommand();
-        ByteBuf data = msg.getData();
+        ByteBuf data = Unpooled.copiedBuffer(msg.getData());
         // MessageDispatcher.getService(command);
         try {
             //各个包的的字段详细见文档AP3000第二版-设备与服务器通信协议.pdf
@@ -65,11 +65,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     heatBeat.setEnvironmentTemperature(data.readByte());
                     heatBeat.setWorkPattern(data.readByte());
 
-                    ByteBuf reply = Unpooled.buffer(1);
-                    reply.writeByte(0);
-
-
-                    ctx.writeAndFlush(msg.getReply(reply));
+                    ctx.writeAndFlush(msg.getReply(byteBufZero()));
                     log.info(" data = [{}]", heatBeat);
                     log.info(("deviceType :[{}] pileCode[{}]"), msg.getDeviceType(), msg.getPileCode());
                     break;
@@ -120,7 +116,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     byteArray.writeByte(number >> 8);
                     byteArray.writeByte(number >> 16);
                     byteArray.writeByte(number >> 24);
-                    ctx.writeAndFlush(msg.getReply(byteArray));
+                    ctx.writeAndFlush(msg.getReply(byteArray.array()));
                     break;
                 }
                 //收到设备上报的刷卡消息
@@ -147,7 +143,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     buffer.writeByte(swipingCardResp.getFeeType());
                     buffer.writeIntLE(swipingCardResp.getBalanceValidateDate());
                     buffer.writeByte(swipingCard.getPort());
-                    ctx.writeAndFlush(msg.getReply(buffer));
+                    ctx.writeAndFlush(msg.getReply(buffer.array()));
                     break;
                 }
                 //订单结算消息
@@ -188,7 +184,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     ByteBuf buffer = Unpooled.buffer(2);
                     buffer.writeByte(chargePortOrderConfirm.getPort());
                     buffer.writeByte(0);
-                    ctx.writeAndFlush(msg.getReply(buffer));
+                    ctx.writeAndFlush(msg.getReply(buffer.array()));
                     break;
                 }
                 //充电口功率心跳数据
