@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @SpringBootApplication
 @EnableAsync
 @ImportResource({"classpath:beans.xml"})
+//@EnableSwagger2WebMvc
 public class AP3000Application {
     public static void main(String[] args) {
         SpringApplication springApplication = new SpringApplication(AP3000Application.class);
