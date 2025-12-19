@@ -17,9 +17,9 @@ public class UDianPackageTest {
     @Test
     public void testBuildFromHexString() {
         UDianPackage uDianPackage = UDianPackage.buildFromHexString(
-                "444E591D003B37AB04B900017E008C080200030000E40000003B0229070220006D05");
+                "444e590f0057a4d804a000207e02021931066304");
         log.debug("testBuildFromHexString:{}", uDianPackage);
-        Assertions.assertEquals("444E591D003B37AB04B900017E008C080200030000E40000003B0229070220006D05",
+        Assertions.assertEquals("444e590f0057a4d804a000207e02021931066304",
                 uDianPackage.toHexString());
     }
 
