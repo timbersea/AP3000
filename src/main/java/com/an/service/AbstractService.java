@@ -8,6 +8,7 @@ import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@SuppressWarnings("unchecked")
 public abstract class AbstractService<Req,Resp> {
     private static final Logger log = LoggerFactory.getLogger(AbstractService.class);
 

@@ -83,6 +83,10 @@
                     <encoding>UTF-8</encoding><!--资源文件以utf8-->
                     <showDeprecation>true</showDeprecation>
                     <showWarnings>true</showWarnings>
+                    <!-- 添加-Xlint:unchecked参数 -->
+                    <compilerArgs>
+                        <arg>-Xlint:unchecked</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
             <!-- 执行单元测试的插件 -->

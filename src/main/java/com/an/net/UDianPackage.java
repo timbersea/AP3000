@@ -5,7 +5,6 @@ import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.util.ReferenceCountUtil;
 
-import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -145,7 +144,7 @@ public class UDianPackage {
         byte[] bytes = new byte[out.readableBytes()];
         out.readBytes(bytes);
         ReferenceCountUtil.release(out);
-        return DatatypeConverter.printHexBinary(bytes);
+        return ByteBufUtil.hexDump(bytes);
     }
 
 
