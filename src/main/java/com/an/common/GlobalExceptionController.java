@@ -1,11 +1,13 @@
 package com.an.common;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+@Hidden
 @ControllerAdvice
 public class GlobalExceptionController {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionController.class);

@@ -1,6 +1,15 @@
 package com.an.net;
 
-import com.an.dto.*;
+import com.an.dto.ChargeFinish;
+import com.an.dto.ChargePortOrderConfirm;
+import com.an.dto.HeatBeat;
+import com.an.dto.HeatBeat21;
+import com.an.dto.PortChargePowerHeatBeat;
+import com.an.dto.PortStatus;
+import com.an.dto.Register;
+import com.an.dto.SettleConsume;
+import com.an.dto.SwipingCard;
+import com.an.dto.SwipingCardResp;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
@@ -297,7 +306,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        log.error("exceptionCaught:ctx = [ {} ], cause = [{}]", ctx, cause);
+        log.error("exceptionCaught:ctx = {} , cause = {}", ctx, cause);
         Integer pileCode = ctx.channel().attr(pileCodeAttr).get();
         if (pileCode != null) {
             log.info("offline: pileCode:[{}]  channelHandlerContext = [{}]", pileCode, ctx);

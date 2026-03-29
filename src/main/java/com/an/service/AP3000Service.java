@@ -1,6 +1,24 @@
 package com.an.service;
 
-import com.an.dto.*;
+import com.an.dto.FirmwareUpdate;
+import com.an.dto.FirmwareUpdateF8;
+import com.an.dto.FirmwareUpdateResp;
+import com.an.dto.MaxTimePower;
+import com.an.dto.ModifyChargeParam;
+import com.an.dto.MutiFunction;
+import com.an.dto.PowerSettings1;
+import com.an.dto.PowerSettings2;
+import com.an.dto.QRCode;
+import com.an.dto.ReadEEPROM;
+import com.an.dto.ReadEEPROMResp;
+import com.an.dto.Reserve;
+import com.an.dto.StartCharge;
+import com.an.dto.StartChargeResp;
+import com.an.dto.StopCharge;
+import com.an.dto.StopChargeResp;
+import com.an.dto.UserCard;
+import com.an.dto.Voice;
+import com.an.dto.WriteEEPROM;
 import com.an.net.GlobalContext;
 import com.an.net.UDianPackage;
 import io.netty.buffer.ByteBuf;
