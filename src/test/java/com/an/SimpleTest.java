@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
@@ -21,7 +20,7 @@ public class SimpleTest {
         byte[] bytes = "134.175.12.227".getBytes(StandardCharsets.UTF_8);
         byte[] bytes1 = new byte[46];
         System.arraycopy(bytes,0,bytes1,0,bytes.length);
-        log.info("test1:{}", DatatypeConverter.printHexBinary(bytes1));
+        log.info("test1:{}", ByteBufUtil.hexDump(bytes1));
     }
     @Test
     public void test2(){
