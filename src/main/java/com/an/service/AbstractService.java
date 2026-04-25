@@ -9,10 +9,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @SuppressWarnings("unchecked")
-public abstract class AbstractService<Req,Resp> {
+public abstract class AbstractService<Req, Resp> {
     private static final Logger log = LoggerFactory.getLogger(AbstractService.class);
 
-    private  final Map<Byte, AbstractService<Req,Resp> > r = new ConcurrentHashMap<>();
+    private final Map<Byte, AbstractService<Req, Resp>> r = new ConcurrentHashMap<>();
 
     Class<Req> clazz;
 

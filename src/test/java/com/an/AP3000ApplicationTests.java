@@ -1,11 +1,10 @@
 package com.an;
 
+import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.env.Environment;
-
-import javax.annotation.Resource;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -15,9 +14,9 @@ public class AP3000ApplicationTests {
     @Resource
     Environment environment;
 
-	@Test
-	public void contextLoads() {
+    @Test
+    public void contextLoads() {
         logger.info(environment.toString());
-	}
+    }
 
 }

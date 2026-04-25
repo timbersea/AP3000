@@ -27,27 +27,10 @@ import static com.an.net.UDianPackage.SIM_CARD_LENGTH;
  * AP3000的codec实现
  */
 public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
-    private static final Logger log = LoggerFactory.getLogger(AP3000Codec.class);
-
-    private static final AttributeKey<String> simAttr = AttributeKey.newInstance("simNo");
     public static final String LINK = "6C696E6B";
     public static final int LINK_LENGTH = 4;
-
-    @Override
-    protected void encode(ChannelHandlerContext channelHandlerContext, UDianPackage msg, ByteBuf out) {
-        log.debug("send to pileCode:[{}] msg:[{}]", channelHandlerContext.channel().attr(GlobalContext.pileCodeAttr),
-                msg);
-        out.writeBytes(msg.getDny().getBytes(StandardCharsets.UTF_8));
-        if (msg.getLength() > 256) {
-            throw new TooLongFrameException("length must less than 256 " + msg.toHexString());
-        }
-        out.writeShortLE(msg.getLength());
-        out.writeIntLE(msg.getPhysicalId());
-        out.writeShortLE(msg.getMessageId());
-        out.writeByte(msg.getCommand());
-        out.writeBytes(msg.getData());
-        out.writeShortLE(calCheck(msg));
-    }
+    private static final Logger log = LoggerFactory.getLogger(AP3000Codec.class);
+    private static final AttributeKey<String> simAttr = AttributeKey.newInstance("simNo");
 
     public static UDianPackage getYouDianPackage(ByteBuf decoded) {
         int initialReaderIndex = decoded.readerIndex();
@@ -126,6 +109,22 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
             // 强制释放堆外内存
             ReferenceCountUtil.release(out);
         }
+    }
+
+    @Override
+    protected void encode(ChannelHandlerContext channelHandlerContext, UDianPackage msg, ByteBuf out) {
+        log.debug("send to pileCode:[{}] msg:[{}]", channelHandlerContext.channel().attr(GlobalContext.pileCodeAttr),
+                msg);
+        out.writeBytes(msg.getDny().getBytes(StandardCharsets.UTF_8));
+        if (msg.getLength() > 256) {
+            throw new TooLongFrameException("length must less than 256 " + msg.toHexString());
+        }
+        out.writeShortLE(msg.getLength());
+        out.writeIntLE(msg.getPhysicalId());
+        out.writeShortLE(msg.getMessageId());
+        out.writeByte(msg.getCommand());
+        out.writeBytes(msg.getData());
+        out.writeShortLE(calCheck(msg));
     }
 
     @Override

@@ -6,12 +6,12 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import jakarta.xml.bind.DatatypeConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.StandardCharsets;
 
 @Slf4j
@@ -25,7 +25,7 @@ public class AP3000CodecTest {
         channel = new EmbeddedChannel(new LoggingHandler(LogLevel.DEBUG), new AP3000Codec(),
                 new MessageHandler());
         ByteBuf out = Unpooled.buffer();
-        out.writeBytes(DatatypeConverter.parseHexBinary(hexString));
+        out.writeBytes(ByteBufUtil.decodeHexDump(hexString));
         //验证写数据返回True
         channel.writeInbound(out);
         channel.flush();
@@ -96,7 +96,7 @@ public class AP3000CodecTest {
 
         channel.finish();
         UDianPackage o = channel.readInbound();
-        log.info("{}",o);
+        log.info("{}", o);
     }
 
     @Test
@@ -390,6 +390,6 @@ public class AP3000CodecTest {
         channel.writeInbound(out);
         channel.flush();
         Object o = channel.readInbound();
-        log.info("{}",o);
+        log.info("{}", o);
     }
 }

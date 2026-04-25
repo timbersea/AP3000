@@ -285,12 +285,12 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
         log.debug("{}", ctx);
         super.channelActive(ctx);
         ctx.channel().attr(GlobalContext.activeTimestamp).setIfAbsent(System.currentTimeMillis());
-                ctx.executor().schedule(() -> {
-                    if(ctx.channel().attr(GlobalContext.pileCodeAttr).get()==null){
-                        log.warn("ctx :[{}] no physicalId after connected for 30 seconds,will be close", ctx);
-                        ctx.close();
-                    }
-                },30, TimeUnit.SECONDS);
+        ctx.executor().schedule(() -> {
+            if (ctx.channel().attr(GlobalContext.pileCodeAttr).get() == null) {
+                log.warn("ctx :[{}] no physicalId after connected for 30 seconds,will be close", ctx);
+                ctx.close();
+            }
+        }, 30, TimeUnit.SECONDS);
     }
 
     @Override

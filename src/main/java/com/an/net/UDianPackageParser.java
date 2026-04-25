@@ -40,8 +40,10 @@
 //            int length = decoded.readUnsignedShortLE(); // 长度字段
 //
 //            // 校验缓冲区长度是否足够（避免后续读取越界）
-//            if (decoded.readableBytes() < (PHYSICAL_ID_LENGTH + MESSAGE_ID_LENGTH + COMMAND_LENGTH + (length - HEADER_SKIP_BYTES - 2 - PHYSICAL_ID_LENGTH - MESSAGE_ID_LENGTH - COMMAND_LENGTH) + CHECK_LENGTH)) {
-//                throw new IllegalArgumentException("Buffer length insufficient for parsing, required: " + length + ", remaining: " + decoded.readableBytes());
+//            if (decoded.readableBytes() < (PHYSICAL_ID_LENGTH + MESSAGE_ID_LENGTH + COMMAND_LENGTH + (length -
+//            HEADER_SKIP_BYTES - 2 - PHYSICAL_ID_LENGTH - MESSAGE_ID_LENGTH - COMMAND_LENGTH) + CHECK_LENGTH)) {
+//                throw new IllegalArgumentException("Buffer length insufficient for parsing, required: " + length +
+//                ", remaining: " + decoded.readableBytes());
 //            }
 //
 //            int physicalId = decoded.readIntLE(); // 物理ID
@@ -49,7 +51,8 @@
 //            int command = decoded.readByte(); // 命令
 //
 //            // 计算数据字段长度（总长度 - 已读固定字段长度）
-//            int dataLength = length - HEADER_SKIP_BYTES - 2 /*length字段自身长度*/ - PHYSICAL_ID_LENGTH - MESSAGE_ID_LENGTH - COMMAND_LENGTH - CHECK_LENGTH;
+//            int dataLength = length - HEADER_SKIP_BYTES - 2 /*length字段自身长度*/ - PHYSICAL_ID_LENGTH -
+//            MESSAGE_ID_LENGTH - COMMAND_LENGTH - CHECK_LENGTH;
 //            ByteBuf data = Unpooled.buffer(dataLength);
 //            decoded.readBytes(data); // 读取数据字段
 //
@@ -117,7 +120,8 @@
 //            int calCheckValue = calCheck(toCalCheck);
 //            if (calCheckValue != check) {
 //                log.debug("cal check value :[{}],receive checkValue[{}]", calCheckValue, check);
-//                throw new IllegalArgumentException("calCheckValue: " + calCheckValue + " not equals to check: " + check);
+//                throw new IllegalArgumentException("calCheckValue: " + calCheckValue + " not equals to check: " +
+//                check);
 //            }
 //            return uDianPackage;
 //        } catch (Exception e) {

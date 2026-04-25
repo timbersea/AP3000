@@ -15,13 +15,13 @@ import java.util.concurrent.TimeoutException;
 import static com.an.net.UDianPackage.pileCode2PhysicalId;
 
 public class GlobalContext {
-    private static final Logger log = LoggerFactory.getLogger(GlobalContext.class);
-    private static final Map<Integer, ChannelHandlerContext> pileCodeChannelContext = new ConcurrentHashMap<>(1024);
-    private static final Map<Short, CompletableFuture<UDianPackage>> completableFutureMap = new ConcurrentHashMap<>(1024);
-
     public static final AttributeKey<Integer> pileCodeAttr = AttributeKey.newInstance("pileCode");
     public static final AttributeKey<Byte> deviceTypeAttr = AttributeKey.newInstance("deviceType");
     public static final AttributeKey<Long> activeTimestamp = AttributeKey.newInstance("activeTimestamp");
+    private static final Logger log = LoggerFactory.getLogger(GlobalContext.class);
+    private static final Map<Integer, ChannelHandlerContext> pileCodeChannelContext = new ConcurrentHashMap<>(1024);
+    private static final Map<Short, CompletableFuture<UDianPackage>> completableFutureMap =
+            new ConcurrentHashMap<>(1024);
 
     public static void online(Integer pileCode, ChannelHandlerContext context) {
         pileCodeChannelContext.computeIfPresent(pileCode,
@@ -58,21 +58,21 @@ public class GlobalContext {
         }
     }
 
-    public static void asyncWriteData(UDianPackage uDianPackage)  {
+    public static void asyncWriteData(UDianPackage uDianPackage) {
         int pileCode = uDianPackage.getPileCode();
         ChannelHandlerContext channelHandlerContext = pileCodeChannelContext.get(pileCode);
         if (channelHandlerContext == null || !channelHandlerContext.channel().isActive()) {
             throw new RuntimeException(pileCode + " is not connect to server");
         }
         Byte deviceType = channelHandlerContext.channel().attr(GlobalContext.deviceTypeAttr).get();
-        if(uDianPackage.getPhysicalId()==null){
-            uDianPackage.setPhysicalId(pileCode2PhysicalId(pileCode,deviceType));
+        if (uDianPackage.getPhysicalId() == null) {
+            uDianPackage.setPhysicalId(pileCode2PhysicalId(pileCode, deviceType));
         }
         channelHandlerContext.writeAndFlush(uDianPackage);
     }
 
 
-    public static UDianPackage requestAndResponse(UDianPackage uDianPackage){
+    public static UDianPackage requestAndResponse(UDianPackage uDianPackage) {
         asyncWriteData(uDianPackage);
         CompletableFuture<UDianPackage> uDianPackageCompletableFuture = new CompletableFuture<>();
         completableFutureMap.put(uDianPackage.getMessageId(), uDianPackageCompletableFuture);

@@ -76,10 +76,10 @@ public class AP3000Service {
         toWrite.writeByte(p.getLongChargeMode());
         toWrite.writeShortLE(p.getExtraChargeTime());
         toWrite.writeByte(p.getSkipShortCircuitCheck());
-//        toWrite.writeByte(p.getJudgeUserDialOut());
-//        toWrite.writeByte(p.getFullAutoStop());
-//        toWrite.writeByte(p.getFullChargePower());
-//        toWrite.writeByte(p.getFullChargePowerMaxJudgeTime());
+        //        toWrite.writeByte(p.getJudgeUserDialOut());
+        //        toWrite.writeByte(p.getFullAutoStop());
+        //        toWrite.writeByte(p.getFullChargePower());
+        //        toWrite.writeByte(p.getFullChargePowerMaxJudgeTime());
         UDianPackage toSend = new UDianPackage(p.getPileCode(), (byte) 0x82, toWrite.array());
 
 
@@ -509,7 +509,8 @@ public class AP3000Service {
         return response.getData()[0];
     }
 
-    private FirmwareUpdateResp getFirmwareUpdateResp(short totalPackage, short currentPackage, byte[] firmware, int pileCode) {
+    private FirmwareUpdateResp getFirmwareUpdateResp(short totalPackage, short currentPackage, byte[] firmware,
+                                                     int pileCode) {
         ByteBuf toWrite = Unpooled.buffer(4);
         toWrite.writeShortLE(totalPackage);
         toWrite.writeShortLE(currentPackage);

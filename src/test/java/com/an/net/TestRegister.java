@@ -1,6 +1,7 @@
 package com.an.net;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.logging.LogLevel;
@@ -8,7 +9,6 @@ import io.netty.handler.logging.LoggingHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.StandardCharsets;
 
 public class TestRegister {
@@ -21,7 +21,7 @@ public class TestRegister {
         channel = new EmbeddedChannel(new LoggingHandler(LogLevel.DEBUG), new AP3000Codec(),
                 new MessageHandler());
         ByteBuf out = Unpooled.buffer();
-        out.writeBytes(DatatypeConverter.parseHexBinary(hexString));
+        out.writeBytes(ByteBufUtil.decodeHexDump(hexString));
         //验证写数据返回True
         channel.writeInbound(out);
         channel.flush();

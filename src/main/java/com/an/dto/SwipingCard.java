@@ -16,5 +16,5 @@ public class SwipingCard {
 
     private byte card2Length;
 
-    private byte [] card2;
+    private byte[] card2;
 }

@@ -17,7 +17,7 @@ public class PortChargePowerHeatBeat {
     private short avgPower;//平均功率
     private String orderId;//订单ID
     private short timeElectric;//该时间段内消耗的电量
-    private  short peakPower;//峰值功率
+    private short peakPower;//峰值功率
     private short voltage;//电压
     private short electricity;//电流
     private byte environmentTemperature;//环境温度
