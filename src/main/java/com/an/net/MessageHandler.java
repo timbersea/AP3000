@@ -125,7 +125,8 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     byteArray.writeByte(number >> 8);
                     byteArray.writeByte(number >> 16);
                     byteArray.writeByte(number >> 24);
-                    ctx.writeAndFlush(msg.getReply(byteArray.array()));
+                    ctx.writeAndFlush(msg.getReply(UDianPackage.toByteArray(byteArray)));
+                    byteArray.release();
                     break;
                 }
                 //收到设备上报的刷卡消息
@@ -152,7 +153,8 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     buffer.writeByte(swipingCardResp.getFeeType());
                     buffer.writeIntLE(swipingCardResp.getBalanceValidateDate());
                     buffer.writeByte(swipingCard.getPort());
-                    ctx.writeAndFlush(msg.getReply(buffer.array()));
+                    ctx.writeAndFlush(msg.getReply(UDianPackage.toByteArray(buffer)));
+                    buffer.release();
                     break;
                 }
                 //订单结算消息
@@ -193,7 +195,8 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     ByteBuf buffer = Unpooled.buffer(2);
                     buffer.writeByte(chargePortOrderConfirm.getPort());
                     buffer.writeByte(0);
-                    ctx.writeAndFlush(msg.getReply(buffer.array()));
+                    ctx.writeAndFlush(msg.getReply(UDianPackage.toByteArray(buffer)));
+                    buffer.release();
                     break;
                 }
                 //充电口功率心跳数据

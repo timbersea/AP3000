@@ -30,7 +30,7 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
     public static final String LINK = "6C696E6B";
     public static final int LINK_LENGTH = 4;
     private static final Logger log = LoggerFactory.getLogger(AP3000Codec.class);
-    private static final AttributeKey<String> simAttr = AttributeKey.newInstance("simNo");
+    private static final AttributeKey<String> simAttr = AttributeKey.valueOf("simNo");
 
     public static UDianPackage getYouDianPackage(ByteBuf decoded) {
         int initialReaderIndex = decoded.readerIndex();

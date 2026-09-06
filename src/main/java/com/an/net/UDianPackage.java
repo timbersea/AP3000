@@ -26,7 +26,11 @@ public class UDianPackage {
     private String dny = "DNY";
     private short length;
     private int physicalId;
-    private int pileCode;
+    private boolean physicalIdSet;
+    /**
+     * HTTP 出站构造时的路由号，仅用于查找在线连接；协议 pileCode 见 {@link #getPileCode()}
+     */
+    private int outboundPileCode;
     private short messageId;
     private int command;//协议中实际占一个字节
 
@@ -39,7 +43,7 @@ public class UDianPackage {
 
     public UDianPackage(int pileCode, byte command, byte[] data) {
         this.dny = "DNY";
-        this.pileCode = pileCode;
+        this.outboundPileCode = pileCode;
         this.setMessageId(generateMessageId());
         this.setCommand(command);
         this.setData(data);
@@ -107,8 +111,22 @@ public class UDianPackage {
         return physicalId2PileCode();
     }
 
+    /**
+     * 取 ByteBuf 当前可读字节，避免 {@link ByteBuf#array()} 返回 capacity。
+     */
+    public static byte[] toByteArray(ByteBuf buf) {
+        return ByteBufUtil.getBytes(buf);
+    }
+
+    /**
+     * HTTP 出站路由号（构造参数）。协议语义上的 pileCode 只能由入站 physicalId 推导。
+     */
+    public int getOutboundPileCode() {
+        return outboundPileCode;
+    }
+
     public void setPileCode(int pileCode) {
-        this.pileCode = pileCode;
+        this.outboundPileCode = pileCode;
     }
 
     public String getDny() {
@@ -131,8 +149,8 @@ public class UDianPackage {
         return physicalId;
     }
 
-    public void setPhysicalId(int physicalId) {
-        this.physicalId = physicalId;
+    public boolean hasPhysicalId() {
+        return physicalIdSet;
     }
 
     public short getMessageId() {
@@ -191,6 +209,11 @@ public class UDianPackage {
         this.data = data;
     }
 
+    public void setPhysicalId(int physicalId) {
+        this.physicalId = physicalId;
+        this.physicalIdSet = true;
+    }
+
     /**
      * 生成当前消息的回复消息
      *
@@ -200,7 +223,7 @@ public class UDianPackage {
     public UDianPackage getReply(byte[] data) {
         UDianPackage uDianPackage = new UDianPackage();
         uDianPackage.dny = this.dny;
-        uDianPackage.physicalId = this.physicalId;
+        uDianPackage.setPhysicalId(this.physicalId);
         uDianPackage.setMessageId(this.messageId);
         uDianPackage.setCommand(this.command);
         uDianPackage.setData(data);
