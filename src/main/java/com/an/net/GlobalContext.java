@@ -1,26 +1,27 @@
 package com.an.net;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.AttributeKey;
-import io.netty.util.ReferenceCountUtil;
-import org.apache.thrift.TApplicationException;
-import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import static com.an.net.UDianPackage.pileCode2PhysicalId;
 
 public class GlobalContext {
-    private static final Logger log = LoggerFactory.getLogger(GlobalContext.class);
-    private static final Map<Integer, ChannelHandlerContext> pileCodeChannelContext = new ConcurrentHashMap<>(1024);
-    private static final Map<Short, CompletableFuture<UDianPackage>> completableFutureMap = new ConcurrentHashMap<>(1024);
-
     public static final AttributeKey<Integer> pileCodeAttr = AttributeKey.newInstance("pileCode");
     public static final AttributeKey<Byte> deviceTypeAttr = AttributeKey.newInstance("deviceType");
     public static final AttributeKey<Long> activeTimestamp = AttributeKey.newInstance("activeTimestamp");
+    private static final Logger log = LoggerFactory.getLogger(GlobalContext.class);
+    private static final Map<Integer, ChannelHandlerContext> pileCodeChannelContext = new ConcurrentHashMap<>(1024);
+    private static final Map<Short, CompletableFuture<UDianPackage>> completableFutureMap =
+            new ConcurrentHashMap<>(1024);
 
     public static void online(Integer pileCode, ChannelHandlerContext context) {
         pileCodeChannelContext.computeIfPresent(pileCode,
@@ -47,7 +48,7 @@ public class GlobalContext {
         }
     }
 
-    public static void completeResponse(Short messageId, UDianPackage uDianPackage) {
+    static void completeResponse(Short messageId, UDianPackage uDianPackage) {
         CompletableFuture<UDianPackage> uDianPackageCompletableFuture = completableFutureMap.get(messageId);
         if (uDianPackageCompletableFuture != null) {
             log.info("completeResponse:pileCode:[{}] messageId = [{}], uDianPackage = [{}]",
@@ -57,40 +58,32 @@ public class GlobalContext {
         }
     }
 
-    public static void asyncWriteData(Integer pileCode, UDianPackage uDianPackage) throws TException {
+    public static void asyncWriteData(UDianPackage uDianPackage) {
+        int pileCode = uDianPackage.getPileCode();
         ChannelHandlerContext channelHandlerContext = pileCodeChannelContext.get(pileCode);
         if (channelHandlerContext == null || !channelHandlerContext.channel().isActive()) {
-            throw new TApplicationException(pileCode + " is not connect to server");
+            throw new RuntimeException(pileCode + " is not connect to server");
         }
-        Byte b = channelHandlerContext.attr(GlobalContext.deviceTypeAttr).get();
-        if(uDianPackage.getPhysicalId()==null){
-            ByteBuf buffer = Unpooled.buffer(4);
-            buffer.writeByte(pileCode&0xFF);
-            buffer.writeByte((pileCode&0xFF00)>>8);
-            buffer.writeByte((pileCode&0xFF0000)>>16);
-            buffer.writeByte(b);
-            int physicalId = buffer.readIntLE();
-            ReferenceCountUtil.release(buffer);
-            uDianPackage.setPhysicalId(physicalId);
+        Byte deviceType = channelHandlerContext.channel().attr(GlobalContext.deviceTypeAttr).get();
+        if (uDianPackage.getPhysicalId() == null) {
+            uDianPackage.setPhysicalId(pileCode2PhysicalId(pileCode, deviceType));
         }
         channelHandlerContext.writeAndFlush(uDianPackage);
     }
 
-    public static UDianPackage requestAndResponse(Integer pileCode, UDianPackage uDianPackage) throws TException {
-        asyncWriteData(pileCode, uDianPackage);
+
+    public static UDianPackage requestAndResponse(UDianPackage uDianPackage) {
+        asyncWriteData(uDianPackage);
         CompletableFuture<UDianPackage> uDianPackageCompletableFuture = new CompletableFuture<>();
         completableFutureMap.put(uDianPackage.getMessageId(), uDianPackageCompletableFuture);
         try {
-            log.info("request to pileCode: [{}] messageId [{}]  wait for response", pileCode,
+            log.info("request to pileCode: [{}] messageId [{}]  wait for response", uDianPackage.getPileCode(),
                     uDianPackage.getMessageId());
-            return uDianPackageCompletableFuture.get(30, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            Thread.interrupted();
-            throw new TApplicationException(e.getMessage());
-        } catch (ExecutionException e) {
-            throw new TApplicationException(e.getMessage());
+            return uDianPackageCompletableFuture.get(5, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e.getMessage());
         } catch (TimeoutException e) {
-            throw new TApplicationException(pileCode + " response timeout for 3 seconds");
+            throw new RuntimeException(uDianPackage.getPileCode() + " response timeout for 3 seconds");
         } finally {
             completableFutureMap.remove(uDianPackage.getMessageId());
         }

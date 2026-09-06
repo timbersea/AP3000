@@ -8,14 +8,11 @@ import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class AbstractService<Req,Resp> {
+@SuppressWarnings("unchecked")
+public abstract class AbstractService<Req, Resp> {
     private static final Logger log = LoggerFactory.getLogger(AbstractService.class);
 
-    private static Map<Byte, AbstractService> r = new ConcurrentHashMap();
-
-    static {
-        r.put((byte) 0x01, new HeatBeatService());
-    }
+    private final Map<Byte, AbstractService<Req, Resp>> r = new ConcurrentHashMap<>();
 
     Class<Req> clazz;
 
@@ -23,6 +20,7 @@ public abstract class AbstractService<Req,Resp> {
         try {
             ParameterizedType pt = (ParameterizedType) this.getClass().getGenericSuperclass();
             Type actualTypeArgument = pt.getActualTypeArguments()[0];
+            //noinspection unchecked
             clazz = (Class<Req>) actualTypeArgument;
             log.info("[{}] receive msg type is [{}]", this.getClass().getSimpleName(), clazz.getSimpleName());
         } catch (Exception e) {

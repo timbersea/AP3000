@@ -4,7 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ResponseCode {
-    private static Map<Integer, String> startChargeResponse = new HashMap<>();
+    private static final Map<Integer, String> startChargeResponse = new HashMap<>();
+    private static final Map<Integer, String> stopReasonDescription = new HashMap<>(32);
 
     static {
 
@@ -13,7 +14,8 @@ public class ResponseCode {
         startChargeResponse.put(2, "端口状态和充电命令相同（不执行）");
         startChargeResponse.put(3, "端口故障（执行）");
         startChargeResponse.put(4, "无此端口号（不执行）");
-        startChargeResponse.put(5, "有多个待充端口（响应FF充电命令，不执行，只针对双路，双路设备的二维码只有一个，且端口号为FF，当2个口都插了充电器，服务器下发充电端口为FF时，设备检测到有2个口待充电，不知道充哪个，就会返回此应答）");
+        startChargeResponse.put(5, "有多个待充端口（响应FF充电命令，不执行，只针对双路，双路设备的二维码只有一个，且端口号为FF，当2个口都插了充电器，服务器下发充电端口为FF时，设备检测到有2" +
+                "个口待充电，不知道充哪个，就会返回此应答）");
         startChargeResponse.put(6, "多路设备功率超标（不执行）");
         startChargeResponse.put(7, "存储器损坏");
         startChargeResponse.put(8, "（预检-继电器坏或保险丝断）");
@@ -22,7 +24,6 @@ public class ResponseCode {
         startChargeResponse.put(0x0B, "（烟感报警）");
     }
 
-    private static final Map<Integer,String> stopReasonDescription =new HashMap<>(32);
     static {
         stopReasonDescription.put(1, "充满自停");
         stopReasonDescription.put(2, "达到最大充电时间");
@@ -55,7 +56,7 @@ public class ResponseCode {
     }
 
     public static String getStopReasonDescription(byte stopReason) {
-        return stopReasonDescription.get(Integer.valueOf(stopReason));
+        return stopReasonDescription.get((int) stopReason);
     }
 
 }

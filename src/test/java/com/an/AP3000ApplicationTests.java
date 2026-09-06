@@ -1,17 +1,22 @@
 package com.an;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import jakarta.annotation.Resource;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.core.env.Environment;
 
-@RunWith(SpringRunner.class)
+import static org.slf4j.LoggerFactory.getLogger;
+
 @SpringBootTest
 public class AP3000ApplicationTests {
+    private static final Logger logger = getLogger(AP3000ApplicationTests.class);
+    @Resource
+    Environment environment;
 
-	@Test
-	public void contextLoads() {
-
-	}
+    @Test
+    public void contextLoads() {
+        logger.info(environment.toString());
+    }
 
 }

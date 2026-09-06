@@ -3,8 +3,8 @@
        xmlns="http://www.springframework.org/schema/beans"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
        http://www.springframework.org/schema/beans/spring-beans-4.3.xsd">
-    <bean id="ConsumeServiceClient" class="com.an.idl.client.ConsumeServiceClient">
-            <constructor-arg value="localhost" />
-            <constructor-arg value="9091" /><!--consumer端工程运行机器所在的IP-->
-    </bean>
+<!--    <bean id="ConsumeServiceClient" class="com.an.idl.client.ConsumeServiceClient">-->
+<!--            <constructor-arg value="localhost" />-->
+<!--            <constructor-arg value="9091" />&lt;!&ndash;consumer端工程运行机器所在的IP&ndash;&gt;-->
+<!--    </bean>-->
 </beans>

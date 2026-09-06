@@ -1,6 +1,7 @@
 package com.an.net;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
@@ -10,19 +11,110 @@ import io.netty.util.ReferenceCountUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Objects;
 
+import static com.an.net.UDianPackage.CHECK_LENGTH;
+import static com.an.net.UDianPackage.COMMAND_LENGTH;
+import static com.an.net.UDianPackage.FRAME_LENGTH;
+import static com.an.net.UDianPackage.HEADER_SKIP_BYTES;
+import static com.an.net.UDianPackage.MESSAGE_ID_LENGTH;
+import static com.an.net.UDianPackage.PHYSICAL_ID_LENGTH;
+import static com.an.net.UDianPackage.SIM_CARD_LENGTH;
+
+/**
+ * AP3000的codec实现
+ */
 public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
+    public static final String LINK = "6C696E6B";
+    public static final int LINK_LENGTH = 4;
     private static final Logger log = LoggerFactory.getLogger(AP3000Codec.class);
-
     private static final AttributeKey<String> simAttr = AttributeKey.newInstance("simNo");
 
+    public static UDianPackage getYouDianPackage(ByteBuf decoded) {
+        int initialReaderIndex = decoded.readerIndex();
+        ByteBuf dataBuf = null;
+        try {
+            // 计算校验和数据
+            byte[] toCalCheck = new byte[decoded.readableBytes() - CHECK_LENGTH];
+            decoded.getBytes(0, toCalCheck, 0, toCalCheck.length);
+
+            decoded.skipBytes(HEADER_SKIP_BYTES);
+            int length = decoded.readUnsignedShortLE();
+            int physicalId = decoded.readIntLE();
+            int messageId = decoded.readUnsignedShortLE();
+            int command = decoded.readByte();
+
+            // 修复：正确读取数据，简化字节操作
+            int dataLength = length - PHYSICAL_ID_LENGTH - MESSAGE_ID_LENGTH - COMMAND_LENGTH - FRAME_LENGTH;
+            byte[] data = new byte[dataLength];
+            decoded.readBytes(data);
+
+            int check = decoded.readUnsignedShortLE();
+
+            UDianPackage uDianPackage = new UDianPackage();
+            uDianPackage.setDny("DNY");
+            uDianPackage.setLength((short) length);
+            uDianPackage.setPhysicalId(physicalId);
+            uDianPackage.setMessageId((short) messageId);
+            uDianPackage.setCommand(command);
+            uDianPackage.setData(data);
+            uDianPackage.setCheck((short) check);
+
+            // 校验和验证
+            int calCheckValue = calCheck(toCalCheck);
+            if (!Objects.equals(calCheckValue, check)) {
+                throw new IllegalArgumentException(String.format("pileCode=%d,Check value mismatch: calculated=%d, " +
+                                "received=%d (offset=%d),frame data=%s",
+                        UDianPackage.physicalId2PileCode(physicalId), calCheckValue, check, initialReaderIndex,
+                        ByteBufUtil.hexDump(decoded)));
+            }
+            return uDianPackage;
+        } finally {
+            // 确保所有临时资源释放（移除无用dataBuf，简化代码）
+            ReferenceCountUtil.release(dataBuf);
+        }
+    }
+
+    /**
+     * 校验和计算（基础方法）
+     */
+    private static int calCheck(byte[] data) {
+        int sum = 0;
+        for (byte b : data) {
+            sum += (b & 0xFF);
+        }
+        return sum;
+    }
+
+    /**
+     * 校验和计算（对象方法）【修复：内存泄漏核心点】
+     */
+    public static int calCheck(UDianPackage uDianPackage) {
+        // 临时ByteBuf必须释放
+        ByteBuf out = Unpooled.buffer();
+        try {
+            out.writeBytes(uDianPackage.getDny().getBytes(StandardCharsets.UTF_8));
+            out.writeShortLE(uDianPackage.getLength());
+            out.writeIntLE(uDianPackage.getPhysicalId());
+            out.writeShortLE(uDianPackage.getMessageId());
+            out.writeByte(uDianPackage.getCommand());
+            out.writeBytes(uDianPackage.getData());
+
+            byte[] toCalCheck = new byte[out.readableBytes()];
+            out.readBytes(toCalCheck);
+            return calCheck(toCalCheck);
+        } finally {
+            // 强制释放堆外内存
+            ReferenceCountUtil.release(out);
+        }
+    }
 
     @Override
-    protected void encode(ChannelHandlerContext channelHandlerContext, UDianPackage msg, ByteBuf out) throws Exception {
-        log.debug("send to pileCode:[{}] msg:[{}]", channelHandlerContext.channel().attr(GlobalContext.pileCodeAttr), msg);
+    protected void encode(ChannelHandlerContext channelHandlerContext, UDianPackage msg, ByteBuf out) {
+        log.debug("send to pileCode:[{}] msg:[{}]", channelHandlerContext.channel().attr(GlobalContext.pileCodeAttr),
+                msg);
         out.writeBytes(msg.getDny().getBytes(StandardCharsets.UTF_8));
         if (msg.getLength() > 256) {
             throw new TooLongFrameException("length must less than 256 " + msg.toHexString());
@@ -36,123 +128,79 @@ public class AP3000Codec extends ByteToMessageCodec<UDianPackage> {
     }
 
     @Override
-    protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf, List<Object> list) throws Exception {
-        //这是通信模块每次连上socket时，都会（第一时间）发送一次sim卡号给socket
+    protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf, List<Object> list) {
+        // 处理SIM卡号（修复：临时ByteBuf手动释放）
         if (channelHandlerContext.channel().attr(simAttr).get() == null) {
-            if (byteBuf.readableBytes() >= 20) {
-                ByteBuf simNoBuf = byteBuf.slice(0, 20);
-                byte[] simNoBytes = new byte[20];
-                simNoBuf.readBytes(simNoBytes, 0, 20);
-                String simNo = DatatypeConverter.printHexBinary(simNoBytes);
-                if ("38393836".equals(simNo.substring(0, 8))) {
-                    log.info("decode:channel = [{}], simNo = [{}]", channelHandlerContext.channel(), simNo);
-                    channelHandlerContext.channel().attr(simAttr).setIfAbsent(simNo);
-                    byteBuf.skipBytes(20);
+            if (byteBuf.readableBytes() >= SIM_CARD_LENGTH) {
+                byteBuf.markReaderIndex();
+                // 临时ByteBuf必须释放
+                ByteBuf simCardNo = byteBuf.readBytes(SIM_CARD_LENGTH);
+                try {
+                    String simNo = ByteBufUtil.hexDump(simCardNo);
+                    if ("38393836".equals(simNo.substring(0, 8))) {
+                        log.info("decode:channel = [{}], simNo = [{}]", channelHandlerContext.channel(), simNo);
+                        channelHandlerContext.channel().attr(simAttr).setIfAbsent(simNo);
+                    } else {
+                        byteBuf.resetReaderIndex();
+                    }
+                } finally {
+                    // 强制释放
+                    ReferenceCountUtil.release(simCardNo);
                 }
             }
         } else {
-            //{6C 69 6E 6B }link是模块心跳包，是防中国移动踢掉网的，长度固定为4字节，（服务器无需应答）。
-            if (byteBuf.readableBytes() >= 4) {
-                ByteBuf linkBuf = byteBuf.slice(0, 4);
-                byte[] linkByte = new byte[4];
-                linkBuf.readBytes(linkByte);
-                String link = DatatypeConverter.printHexBinary(linkByte);
-                if ("6C696E6B".equals(link)) {
-                    if (log.isDebugEnabled()) {
+            // 处理心跳包link（修复：临时ByteBuf手动释放）
+            if (byteBuf.readableBytes() >= LINK_LENGTH) {
+                byteBuf.markReaderIndex();
+                ByteBuf linkBuf = byteBuf.readBytes(LINK_LENGTH);
+                try {
+                    String link = ByteBufUtil.hexDump(linkBuf);
+                    if (LINK.equalsIgnoreCase(link)) {
                         log.debug("pileCode = [{}],read link [{}]",
                                 channelHandlerContext.channel().attr(GlobalContext.pileCodeAttr), link);
+                    } else {
+                        byteBuf.resetReaderIndex();
                     }
-                    byteBuf.skipBytes(4);
+                } finally {
+                    // 强制释放
+                    ReferenceCountUtil.release(linkBuf);
                 }
             }
-            ByteBuf decoded = decode(byteBuf);
+            // 读取完整数据帧
+            ByteBuf decoded = readFrame(byteBuf);
             if (decoded != null) {
-                UDianPackage uDianPackage = getYouDianPackage(decoded);
-                list.add(uDianPackage);
+                try {
+                    UDianPackage uDianPackage = getYouDianPackage(decoded);
+                    list.add(uDianPackage);
+                } finally {
+                    // 双重保险：确保帧数据一定释放
+                    ReferenceCountUtil.release(decoded);
+                }
             }
         }
     }
 
-    public static UDianPackage getYouDianPackage(ByteBuf decoded) {
-        ByteBuf data = null;
-        try {
-            byte[] toCalCheck = new byte[decoded.readableBytes() - 2];//去掉最后两字节的检校值后的数据参与计算校验值
-            decoded.getBytes(0, toCalCheck, 0, toCalCheck.length);
-            decoded.skipBytes(3);
-            int length = decoded.readUnsignedShortLE();
-            int physicalId = decoded.readIntLE();
-            int messageId = decoded.readUnsignedShortLE();
-            int command = decoded.readByte();
-            data = decoded.readBytes(length - 4 - 2 - 1 - 2);
-            data.retain();
-            int check = decoded.readUnsignedShortLE();
-
-            UDianPackage uDianPackage = new UDianPackage();
-            uDianPackage.setDny("DNY");
-            uDianPackage.setLength((short) length);
-            uDianPackage.setPhysicalId(physicalId);
-            uDianPackage.setMessageId((short) messageId);
-            uDianPackage.setCommand(command);
-            byte[] bytes = new byte[length - 4 - 2 - 1 - 2];
-            data.readBytes(bytes);
-            uDianPackage.setData(bytes);
-            uDianPackage.setCheck((short) check);
-
-            int calCheckValue = calCheck(toCalCheck);
-            if (calCheckValue != check) {
-                log.debug("cal check value :[{}],receive chekcValue[{}]", calCheckValue, check);
-                throw new IllegalArgumentException("calCheckValue: " + calCheckValue + " not equals to check: " + check);
-            }
-            return uDianPackage;
-        } catch (Exception e) {
-            throw e;
-        } finally {
-            ReferenceCountUtil.release(decoded);
-            if (data != null) {
-                ReferenceCountUtil.release(data);
-            }
-        }
-    }
-
-    private static int calCheck(byte[] data) {
-        int sum = 0;
-        for (byte b : data) {
-            sum += (b & 0x000000FF);
-        }
-        return sum;
-    }
-
-    public static int calCheck(UDianPackage uDianPackage) {
-        ByteBuf out = Unpooled.buffer();
-        out.writeBytes(uDianPackage.getDny().getBytes(StandardCharsets.UTF_8));
-        out.writeShortLE(uDianPackage.getLength());
-        out.writeIntLE(uDianPackage.getPhysicalId());
-        out.writeShortLE(uDianPackage.getMessageId());
-        out.writeByte(uDianPackage.getCommand());
-        out.writeBytes(uDianPackage.getData());
-        byte[] toCalCheck = new byte[out.readableBytes()];
-        out.readBytes(toCalCheck);
-        return calCheck(toCalCheck);
-    }
-
-    private ByteBuf decode(ByteBuf in) throws Exception {
+    /**
+     * 读取完整数据帧（无内存泄漏，优化可读性）
+     */
+    private ByteBuf readFrame(ByteBuf in) {
         in.markReaderIndex();
-        if (in.readableBytes() < 12) {
+        int minHeaderLength =
+                HEADER_SKIP_BYTES + FRAME_LENGTH + PHYSICAL_ID_LENGTH + MESSAGE_ID_LENGTH + COMMAND_LENGTH;
+        if (in.readableBytes() < minHeaderLength) {
             return null;
-        } else if (in.readableBytes() > 256) {
-            ReferenceCountUtil.release(in);
-            throw new TooLongFrameException();
-        } else {
-            ByteBuf byteBuf = in.slice(0, 12);
-            byteBuf.retain();
-            byteBuf.skipBytes(3);
-            int length = byteBuf.readUnsignedShortLE();
-            ReferenceCountUtil.release(byteBuf);
-            if (in.readableBytes() < (length + 3)) {
-                in.resetReaderIndex();
-                return null;
-            }
-            return in.readBytes(length + 3 + 2);
         }
+
+        in.skipBytes(HEADER_SKIP_BYTES);
+        short length = in.readShortLE();
+        in.resetReaderIndex();
+
+        // 校验完整帧长度
+        int fullFrameLength = HEADER_SKIP_BYTES + FRAME_LENGTH + length;
+        if (in.readableBytes() < fullFrameLength) {
+            return null;
+        }
+
+        return in.readBytes(fullFrameLength);
     }
 }
