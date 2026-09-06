@@ -34,7 +34,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
         ctx.channel().attr(pileCodeAttr).setIfAbsent(pileCode);
         ctx.channel().attr(GlobalContext.deviceTypeAttr).setIfAbsent(msg.physicalId2Type());
         GlobalContext.online(pileCode, ctx);
-        GlobalContext.completeResponse(msg.getMessageId(), msg);
+        GlobalContext.completeResponse(msg);
 
         int command = msg.getCommand();
         ByteBuf data = Unpooled.copiedBuffer(msg.getData());
@@ -75,8 +75,8 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     heatBeat.setWorkPattern(data.readByte());
 
                     ctx.writeAndFlush(msg.getReply(byteBufZero()));
-                    log.info(" data = [{}]", heatBeat);
-                    log.info(("deviceType :[{}] pileCode[{}]"), msg.getDeviceType(), msg.getPileCode());
+                    log.debug("heartbeat data = [{}]", heatBeat);
+                    log.debug("deviceType :[{}] pileCode[{}]", msg.getDeviceType(), msg.getPileCode());
                     break;
                 }
                 //注册消息
@@ -125,14 +125,15 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     byteArray.writeByte(number >> 8);
                     byteArray.writeByte(number >> 16);
                     byteArray.writeByte(number >> 24);
-                    ctx.writeAndFlush(msg.getReply(byteArray.array()));
+                    ctx.writeAndFlush(msg.getReply(UDianPackage.toByteArray(byteArray)));
+                    byteArray.release();
                     break;
                 }
                 //收到设备上报的刷卡消息
                 case 0x02: {
                     SwipingCard swipingCard = new SwipingCard();
                     swipingCard.setPileCode(pileCode);
-                    swipingCard.setCardId(data.readInt());
+                    swipingCard.setCardId(data.readIntLE());
                     swipingCard.setCardType(data.readByte());
                     swipingCard.setPort(data.readByte());
                     swipingCard.setBalance(data.readShortLE());
@@ -152,7 +153,8 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     buffer.writeByte(swipingCardResp.getFeeType());
                     buffer.writeIntLE(swipingCardResp.getBalanceValidateDate());
                     buffer.writeByte(swipingCard.getPort());
-                    ctx.writeAndFlush(msg.getReply(buffer.array()));
+                    ctx.writeAndFlush(msg.getReply(UDianPackage.toByteArray(buffer)));
+                    buffer.release();
                     break;
                 }
                 //订单结算消息
@@ -164,7 +166,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     settleConsume.setElectric(data.readShortLE());
                     settleConsume.setPort(data.readByte());
                     settleConsume.setLunchMode(data.readByte());
-                    settleConsume.setCardId(data.readInt());
+                    settleConsume.setCardId(data.readIntLE());
                     settleConsume.setStopReason(data.readByte());
                     data.skipBytes(8);
                     settleConsume.setOrderId(String.valueOf(data.readLongLE()));
@@ -185,7 +187,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     chargePortOrderConfirm.setPileCode(pileCode);
                     chargePortOrderConfirm.setPort(data.readByte());
                     chargePortOrderConfirm.setStatus(data.readByte());
-                    chargePortOrderConfirm.setCardId(data.readInt());
+                    chargePortOrderConfirm.setCardId(data.readIntLE());
                     chargePortOrderConfirm.setChargeTime(data.readShortLE());
                     data.skipBytes(8);
                     chargePortOrderConfirm.setOrderId(data.readLongLE() + "");
@@ -193,7 +195,8 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
                     ByteBuf buffer = Unpooled.buffer(2);
                     buffer.writeByte(chargePortOrderConfirm.getPort());
                     buffer.writeByte(0);
-                    ctx.writeAndFlush(msg.getReply(buffer.array()));
+                    ctx.writeAndFlush(msg.getReply(UDianPackage.toByteArray(buffer)));
+                    buffer.release();
                     break;
                 }
                 //充电口功率心跳数据
@@ -301,6 +304,13 @@ public class MessageHandler extends SimpleChannelInboundHandler<UDianPackage> {
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        if (evt instanceof io.netty.handler.timeout.IdleStateEvent idle
+                && idle.state() == io.netty.handler.timeout.IdleState.READER_IDLE) {
+            log.warn("reader idle, close channel ctx=[{}] pileCode=[{}]",
+                    ctx, ctx.channel().attr(pileCodeAttr).get());
+            ctx.close();
+            return;
+        }
         super.userEventTriggered(ctx, evt);
     }
 
