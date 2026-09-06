@@ -63,9 +63,12 @@ public class UDianPackage {
 
     public static UDianPackage buildFromHexString(String hexString) {
         byte[] bytes = ByteBufUtil.decodeHexDump(hexString);
-        ByteBuf buffer = Unpooled.buffer();
-        buffer.writeBytes(bytes);
-        return AP3000Codec.getYouDianPackage(buffer);
+        ByteBuf buffer = Unpooled.wrappedBuffer(bytes);
+        try {
+            return AP3000Codec.getYouDianPackage(buffer);
+        } finally {
+            ReferenceCountUtil.release(buffer);
+        }
     }
 
     public static short generateMessageId() {

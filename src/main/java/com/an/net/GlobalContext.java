@@ -20,8 +20,28 @@ public class GlobalContext {
     public static final AttributeKey<Long> activeTimestamp = AttributeKey.valueOf("activeTimestamp");
     private static final Logger log = LoggerFactory.getLogger(GlobalContext.class);
     private static final Map<Integer, ChannelHandlerContext> pileCodeChannelContext = new ConcurrentHashMap<>(1024);
-    private static final Map<Short, CompletableFuture<UDianPackage>> completableFutureMap =
-            new ConcurrentHashMap<>(1024);
+    private static final Map<Long, PendingRequest> completableFutureMap = new ConcurrentHashMap<>(1024);
+
+    static long pendingKey(int pileCode, short messageId) {
+        return ((long) pileCode << 16) | (messageId & 0xFFFFL);
+    }
+
+    /**
+     * 仅当存在匹配的 (pileCode, messageId, command) 等待项时完成。
+     */
+    static void completeResponse(UDianPackage uDianPackage) {
+        long key = pendingKey(uDianPackage.getPileCode(), uDianPackage.getMessageId());
+        PendingRequest pending = completableFutureMap.get(key);
+        if (pending == null) {
+            return;
+        }
+        if (pending.expectedCommand() != uDianPackage.getCommand()) {
+            return;
+        }
+        log.info("completeResponse:pileCode:[{}] messageId = [{}], uDianPackage = [{}]",
+                uDianPackage.getPileCode(), uDianPackage.getMessageId(), uDianPackage);
+        pending.future().complete(uDianPackage);
+    }
 
     public static void online(Integer pileCode, ChannelHandlerContext context) {
         pileCodeChannelContext.compute(pileCode, (k, existing) -> {
@@ -50,18 +70,29 @@ public class GlobalContext {
         }
     }
 
-    static void completeResponse(Short messageId, UDianPackage uDianPackage) {
-        CompletableFuture<UDianPackage> uDianPackageCompletableFuture = completableFutureMap.get(messageId);
-        if (uDianPackageCompletableFuture != null) {
-            log.info("completeResponse:pileCode:[{}] messageId = [{}], uDianPackage = [{}]",
-                    uDianPackage.getPileCode(), messageId,
-                    uDianPackage);
-            uDianPackageCompletableFuture.complete(uDianPackage);
+    public static UDianPackage requestAndResponse(UDianPackage uDianPackage) {
+        int routePileCode = uDianPackage.getOutboundPileCode();
+        long key = pendingKey(routePileCode, uDianPackage.getMessageId());
+        CompletableFuture<UDianPackage> future = new CompletableFuture<>();
+        completableFutureMap.put(key, new PendingRequest(future, uDianPackage.getCommand()));
+        try {
+            asyncWriteData(uDianPackage);
+            log.info("request to pileCode: [{}] messageId [{}]  wait for response", uDianPackage.getPileCode(),
+                    uDianPackage.getMessageId());
+            return future.get(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e.getMessage());
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e.getMessage());
+        } catch (TimeoutException e) {
+            throw new RuntimeException(uDianPackage.getPileCode() + " response timeout for 5 seconds");
+        } finally {
+            completableFutureMap.remove(key);
         }
     }
 
     public static void asyncWriteData(UDianPackage uDianPackage) {
-        // HTTP 出站用构造时的路由号寻路；协议 pileCode 仍只能由入站 physicalId 推导
         int routePileCode = uDianPackage.getOutboundPileCode();
         ChannelHandlerContext channelHandlerContext = pileCodeChannelContext.get(routePileCode);
         if (channelHandlerContext == null || !channelHandlerContext.channel().isActive()) {
@@ -77,24 +108,6 @@ public class GlobalContext {
         channelHandlerContext.writeAndFlush(uDianPackage);
     }
 
-
-    public static UDianPackage requestAndResponse(UDianPackage uDianPackage) {
-        CompletableFuture<UDianPackage> uDianPackageCompletableFuture = new CompletableFuture<>();
-        completableFutureMap.put(uDianPackage.getMessageId(), uDianPackageCompletableFuture);
-        try {
-            asyncWriteData(uDianPackage);
-            log.info("request to pileCode: [{}] messageId [{}]  wait for response", uDianPackage.getPileCode(),
-                    uDianPackage.getMessageId());
-            return uDianPackageCompletableFuture.get(5, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException(e.getMessage());
-        } catch (ExecutionException e) {
-            throw new RuntimeException(e.getMessage());
-        } catch (TimeoutException e) {
-            throw new RuntimeException(uDianPackage.getPileCode() + " response timeout for 5 seconds");
-        } finally {
-            completableFutureMap.remove(uDianPackage.getMessageId());
-        }
+    private record PendingRequest(CompletableFuture<UDianPackage> future, int expectedCommand) {
     }
 }

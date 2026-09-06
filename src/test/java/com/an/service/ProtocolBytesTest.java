@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ProtocolBytesTest {
 
@@ -40,7 +41,7 @@ class ProtocolBytesTest {
     void query90EmptyBufferCannotReadResponseFields() {
         byte[] responseData = new byte[]{0x01, 0x00, 0x02, 0x00, 0x03, 0x04, 0x00, 0x05, 0x00, 0x06, 0x00};
         ByteBuf wrong = Unpooled.buffer(responseData.length);
-        org.junit.jupiter.api.Assertions.assertThrows(IndexOutOfBoundsException.class, wrong::readShortLE);
+        assertThrows(IndexOutOfBoundsException.class, wrong::readShortLE);
 
         ByteBuf right = Unpooled.copiedBuffer(responseData);
         assertEquals(1, right.readShortLE());

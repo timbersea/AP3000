@@ -238,7 +238,9 @@ public class AP3000Service {
      * 设备固件升级（E0 升级分机指令）（E1 升级电源板指令）（E2 主机统一升级）（参考 01 指令中的设备类型表
      */
     public FirmwareUpdateResp deviceUpdatePackage(FirmwareUpdate p) {
-        return getFirmwareUpdateResp(p.getTotalPackage(), p.getCurrentPackage(), p.getFirmware(), p.getPileCode());
+        byte command = p.getCommand() == null ? (byte) 0xE1 : p.getCommand();
+        return getFirmwareUpdateResp(command, p.getTotalPackage(), p.getCurrentPackage(), p.getFirmware(),
+                p.getPileCode());
     }
 
     /**
@@ -246,7 +248,8 @@ public class AP3000Service {
      *
      */
     public FirmwareUpdateResp deviceUpdatePackageF8(FirmwareUpdateF8 p) {
-        return getFirmwareUpdateResp(p.getTotalPackage(), p.getCurrentPackage(), p.getFirmware(), p.getPileCode());
+        return getFirmwareUpdateResp((byte) 0xF8, p.getTotalPackage(), p.getCurrentPackage(), p.getFirmware(),
+                p.getPileCode());
     }
 
     /**
@@ -526,13 +529,13 @@ public class AP3000Service {
         return response.getData()[0];
     }
 
-    private FirmwareUpdateResp getFirmwareUpdateResp(short totalPackage, short currentPackage, byte[] firmware,
-                                                     int pileCode) {
+    private FirmwareUpdateResp getFirmwareUpdateResp(byte command, short totalPackage, short currentPackage,
+                                                     byte[] firmware, int pileCode) {
         ByteBuf toWrite = Unpooled.buffer(4 + firmware.length);
         toWrite.writeShortLE(totalPackage);
         toWrite.writeShortLE(currentPackage);
         toWrite.writeBytes(firmware);
-        UDianPackage uDianPackage = new UDianPackage(pileCode, (byte) 0xE1, UDianPackage.toByteArray(toWrite));
+        UDianPackage uDianPackage = new UDianPackage(pileCode, command, UDianPackage.toByteArray(toWrite));
         toWrite.release();
 
         UDianPackage response = GlobalContext.requestAndResponse(uDianPackage);
